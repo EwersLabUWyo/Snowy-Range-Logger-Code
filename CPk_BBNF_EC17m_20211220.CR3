@@ -1,0 +1,560 @@
+'Program: CP Eddy-Covariance (CPk_BBNF_17m)
+'Written by: John Frank, edited by Mario Bretfeld
+'Last edits:
+'2019-05-19 by Mario Bretfeld (changed fast response output name; added Pa to fast response output; changed WS_12m from sample to average, added median WS_12m)
+'2019-04-22 by Mario Bretfeld (modified from BBSF_7m)
+'2019-02-25 by Mario Bretfeld (fixed NetRad calculation; added 5-min met data; fixed SDev Raw output of netrad) 
+'2018-11-19 by Sasha Ivans (fix data storage issue)
+
+
+'*** Wiring ***
+
+'SDM INPUT
+'C1				LI-7500 SDM Data (gray)
+'C2				LI-7500 SDM Clock (blue)
+'C3				LI-7500 SDM Enable (brown)
+'G				LI-7500 SDM reference (black)
+'				LI-7500 SDM shield (white)
+
+'CONTROL PORTS (RS-232 SERIAL)
+
+'POWER IN
+'12V				datalogger (red)
+'G				datalogger (black)
+
+'EXTERNAL POWER SUPPLY
+'POS		
+'				LI-7500 power (red with white)
+'				datalogger (red)
+'NEG				
+'				LI-7500 power reference (red with black)
+'				LI-7500 ground (green)
+'				datalogger (black)
+
+
+PipeLineMode
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+'Constants
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+'*** Station constants.
+'Start of Constants Customization Section
+
+Const SCAN_INTERVAL = 100  'Unique value, measurement rate 100 ms (10 Hz) or 50 ms (20 Hz).
+Const OUTPUT_INTERVAL = 30 'Unique value, online flux data output interval in minutes.
+Const SCAN_BUFFER_SIZE = 60*INT (1000/SCAN_INTERVAL)     'Compute a 60 second scan buffer.
+Const NUM_DAY_CRD = 44    'Unique value, number of days of flux data to store on a 16 GB CF card (44 days = 2 GB). This value will vary with configuration.
+Const NUM_DAY_CPU = 1                                              'Number of days of flux data to store on the CPU.
+Const FLUX_SIZE_CPU = Ceiling ((NUM_DAY_CPU*1440)/OUTPUT_INTERVAL) 'Size of flux data table on CPU [days].
+Const FLUX_SIZE_CRD = Ceiling ((NUM_DAY_CRD*1440)/OUTPUT_INTERVAL) 'Size of flux data table on CRD [days].
+Const SDM_PER = 30         'Unique value, default SDM clock speed.
+
+Const const_M1 = 1299400000  'Unique IR sensor SN: 5059 
+Const const_M2 = 6931490     'Unique IR sensor SN: 5059
+Const const_M3 = 65349.9     'Unique IR sensor SN: 5059
+Const const_B1 = -2816140    'Unique IR sensor SN: 5059
+Const const_B2 = 52594.9     'Unique IR sensor SN: 5059
+Const const_B3 = 3123.11     'Unique IR sensor SN: 5059
+
+Const pyrano_upper = 13.60      'Unique up pyranometer sensitivity from CNR4 cal sheet SN: 131353
+Const pyrano_lower = 13.20      'Unique down pyranometer sensitivity from CNR4 cal sheet SN: 131353
+Const pyrgeo_upper = 14.44      'Unique up pyrgeometer sensitivity from CNR4 cal sheet SN: 131353
+Const pyrgeo_lower = 11.32      'Unique down pyrgeometer sensitviity from CNR4 cal sheet SN: 131353
+
+Const LI190_Cal_1 = 5.63     'Unique calibration factor for LI190SB #1 calibration sheet SN: Q34700
+Const LI190_Cal_2 = 5.65     'Unique calibration factor for LI190SB #2 calibration sheet SN: Q35376
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+'Variable Definitions
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+'Datalogger Diagnostics
+Public DIAG_CR3000(2)
+Alias DIAG_CR3000(1) = T_CR3000 : Units T_CR3000 = C
+Alias DIAG_CR3000(2) = V_CR3000 : Units V_CR3000 = V
+Dim n = 1 : Units n = samples       'Number of samples in the online stats.
+
+'CSAT3 Sonic Anemometer - Above canopy
+Public Sonic_CSAT3A(5)
+Alias Sonic_CSAT3A(1) = Ux_CSAT3_17m : Units Ux_CSAT3_17m = m s-1
+Alias Sonic_CSAT3A(2) = Uy_CSAT3_17m : Units Uy_CSAT3_17m = m s-1
+Alias Sonic_CSAT3A(3) = Uz_CSAT3_17m : Units Uz_CSAT3_17m = m s-1
+Alias Sonic_CSAT3A(4) = Ts_CSAT3_17m : Units Ts_CSAT3_17m = C
+Alias Sonic_CSAT3A(5) = DIAG_CSAT3_17m : Units DIAG_CSAT3_17m = unitless
+
+'CSAT3 Sonic Anemometer - Above canopy
+Public Sonic_CSAT3B(5)
+Alias Sonic_CSAT3B(1) = Ux_CSAT3_7m : Units Ux_CSAT3_7m = m s-1
+Alias Sonic_CSAT3B(2) = Uy_CSAT3_7m : Units Uy_CSAT3_7m = m s-1
+Alias Sonic_CSAT3B(3) = Uz_CSAT3_7m : Units Uz_CSAT3_7m = m s-1
+Alias Sonic_CSAT3B(4) = Ts_CSAT3_7m : Units Ts_CSAT3_7m = C
+Alias Sonic_CSAT3B(5) = DIAG_CSAT3_7m : Units DIAG_CSAT3_7m = unitless
+
+'LI-7500 CO2/H2O IRGA
+Public LI7500(4)
+Alias LI7500(1) = rho_c_LI7500 : Units rho_c_LI7500 = mg m-3
+Alias LI7500(2) = rho_v_LI7500 : Units rho_v_LI7500 = g m-3
+Alias LI7500(3) = P_LI7500 : Units P_LI7500 = kPa
+Alias LI7500(4) = DIAG_LI7500 : Units DIAG_LI7500 = unitless
+
+'CNR4 NetRad
+Public SWD : Units SWD = W m-2 'shortwave down
+Public SWU : Units SWU = W m-2 'shortwave up
+Public Tb : Units Tb = C 'block temp
+Public LWD_cor : Units LWD_cor = W m-2 'temp corrected longwave down
+Public LWU_cor : Units LWU_cor = W m-2 'temp corrected longwave up
+Public albedo : Units albedo = % 'albedo
+Public Rn : Units Rn = W m-2 'netrad
+Dim CNR4(5) 'sensor readings tmp storage
+Dim CNR4_raw(5) 'raw data 
+Dim Rs ' for calculation of block temperature
+
+'LI-190SB PAR
+Public PAR(2) : Units PAR = μmol s-1 m-2
+Alias PAR(1) = PAR_up_17m                        'flux density for LI190SB facing up (measuring downwards PAR)
+Alias PAR(2) = PAR_dn_17m                        'flux density for LI190SB facing down (measuring upwards PAR)
+Public PAR_raw(2) 'raw data 
+
+'HMP & RTD for RH/AirT
+Public AirT_17m : Units AirT_17m = C
+Public AirT_12m : Units AirT_12m = C
+Public AirT_7m : Units AirT_7m = C
+Public RH_17m : Units RH_17m = %
+Public RH_12m : Units RH_12m = %
+Public RH_7m : Units RH_7m = %
+
+'PRI variables
+Public UpOut_17m(3)
+Public DownOut_17m(3)
+
+Public PRI_17m
+
+Alias UpOut_17m(1) = Up_532_17m
+Alias DownOut_17m(1) = Down_532_17m
+Alias UpOut_17m(2) = Up_570_17m
+Alias DownOut_17m(2) = Down_570_17m
+Alias UpOut_17m(3) = Ind_up_17m
+Alias DownOut_17m(3) = Ind_down_17m
+
+Units Up_532_17m = W/m^2 nm
+Units Down_532_17m = W/m^2 nm sr
+Units Up_570_17m = W/m^2 nm
+Units Down_570_17m = W/m^2 nm sr
+
+'PRI variables
+Public UpOut_7m(3)
+Public DownOut_7m(3)
+
+Public PRI_7m
+
+Alias UpOut_7m(1) = Up_532_7m
+Alias DownOut_7m(1) = Down_532_7m
+Alias UpOut_7m(2) = Up_570_7m
+Alias DownOut_7m(2) = Down_570_7m
+Alias UpOut_7m(3) = Ind_up_7m
+Alias DownOut_7m(3) = Ind_down_7m
+
+Units Up_532_7m = W/m^2 nm
+Units Down_532_7m = W/m^2 nm sr
+Units Up_570_7m = W/m^2 nm
+Units Down_570_7m = W/m^2 nm sr
+
+'RM Young for Wind Speed/Wind Direction
+Public WS : Units WS = m s-1 
+Public WD : Units WD = Decimal degrees
+Alias WS = WS_12m
+Alias WD = WD_12m
+
+'SB 111 Surface Temp
+Dim m                                             'slope for target T calculation
+Dim b                                             'offset for target T calculation
+Dim TT_K                                          'SB111 Target Temp (K)
+Dim SBT_K                                         'SB111 Block Temp (K)
+Public SurfT_canopy : Units SurfT_canopy = C      'SI111 IR Target Temp (C)
+Public SBT_C : Units SBT_C = C                    'SI111 Block Temp (C)
+Public TTmV : Units TTmV = mV                     'SI111 Target raw
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+'Output Definitions
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+'Time Series Flux Data
+DataTable (TimeSeriesData,TRUE,-1)
+	DataInterval (0,SCAN_INTERVAL,mSec,100)
+  TableFile ("CRD:"&Status.SerialNumber(1,1)&".CP_BBNF17m_10Hz",64,-1,0,1,Day,0,0)
+  Sample (1,Ux_CSAT3_17m,IEEE4)
+	Sample (1,Uy_CSAT3_17m,IEEE4)
+	Sample (1,Uz_CSAT3_17m,IEEE4)
+	Sample (1,Ts_CSAT3_17m,IEEE4)
+	Sample (1,Ux_CSAT3_7m,IEEE4)
+	Sample (1,Uy_CSAT3_7m,IEEE4)
+	Sample (1,Uz_CSAT3_7m,IEEE4)
+	Sample (1,Ts_CSAT3_7m,IEEE4)
+	Sample (1,rho_c_LI7500,IEEE4)
+	Sample (1,rho_v_LI7500,IEEE4)
+	Sample (1,P_LI7500,IEEE4)
+'  Sample (1,DIAG_CSAT3_7m,IEEE4)    'removed to preserve space on cards
+'  Sample (1,DIAG_CSAT3_17m,IEEE4)   'removed to preserve space on cards
+  Sample (1,DIAG_LI7500,IEEE4)
+EndTable
+
+'Summary Flux Data
+DataTable (Flux30Min,TRUE,-1)
+	DataInterval (0,OUTPUT_INTERVAL,Min,100)
+	CardOut (0,FLUX_SIZE_CRD)
+  'TableFile ("CRD:"&Status.SerialNumber(1,1)&".CP_ECF_Flux30Min",64,-1,0,7,Day,0,0)
+  Totalize (1,n,IEEE4,0)
+	Average (1,Ux_CSAT3_17m,IEEE4,0)
+	Average (1,Uy_CSAT3_17m,IEEE4,0)
+	Average (1,Uz_CSAT3_17m,IEEE4,0)
+	Average (1,Ts_CSAT3_17m,IEEE4,0)
+	Average (1,Ux_CSAT3_7m,IEEE4,0)
+	Average (1,Uy_CSAT3_7m,IEEE4,0)
+	Average (1,Uz_CSAT3_7m,IEEE4,0)
+	Average (1,Ts_CSAT3_7m,IEEE4,0)
+	Average (1,rho_c_LI7500,IEEE4,0)
+	Average (1,rho_v_LI7500,IEEE4,0)
+	Average (1,P_LI7500,IEEE4,0)
+	Average (1,DIAG_CSAT3_17m,IEEE4,0)
+	Average (1,DIAG_LI7500,IEEE4,0)
+  Average (1,T_CR3000,IEEE4,0)
+  Average (1,V_CR3000,IEEE4,0)
+	StdDev (1,Ux_CSAT3_17m,IEEE4,False)
+	StdDev (1,Uy_CSAT3_17m,IEEE4,False)
+	StdDev (1,Uz_CSAT3_17m,IEEE4,False)
+	StdDev (1,Ts_CSAT3_17m,IEEE4,False)
+	StdDev (1,Ux_CSAT3_7m,IEEE4,False)
+	StdDev (1,Uy_CSAT3_7m,IEEE4,False)
+	StdDev (1,Uz_CSAT3_7m,IEEE4,False)
+	StdDev (1,Ts_CSAT3_7m,IEEE4,False)
+	StdDev (1,rho_c_LI7500,IEEE4,False)
+	StdDev (1,rho_v_LI7500,IEEE4,False)
+	StdDev (1,P_LI7500,IEEE4,False)
+	StdDev (1,DIAG_CSAT3_17m,IEEE4,False)
+	StdDev (1,DIAG_CSAT3_7m,IEEE4,False)
+	StdDev (1,DIAG_LI7500,IEEE4,False)
+	StdDev (1,T_CR3000,IEEE4,False)
+	StdDev (1,V_CR3000,IEEE4,False)
+EndTable
+
+'Summary Met Data
+DataTable (Met30Min,TRUE,-1)
+	DataInterval (0,OUTPUT_INTERVAL,Min,100)
+	CardOut (0,FLUX_SIZE_CRD)
+ ' TableFile ("CRD:"&Status.SerialNumber(1,1)&".CP_ECF_Met30Min",64,-1,0,7,Day,0,0)
+  
+  Average (1, AirT_17m,IEEE4,False)
+  Average (1, AirT_12m,IEEE4,False)
+  Average (1, AirT_7m,IEEE4,False)
+
+  Minimum (1, AirT_17m,IEEE4,False,False)
+  Minimum (1, AirT_12m,IEEE4,False,False)
+  Minimum (1, AirT_7m,IEEE4,False,False)
+
+  Maximum (1, AirT_17m,IEEE4,False,False)
+  Maximum (1, AirT_12m,IEEE4,False,False)
+  Maximum (1, AirT_7m,IEEE4,False,False)
+
+  StdDev (1, AirT_17m,IEEE4,False)
+  StdDev (1, AirT_12m,IEEE4,False)
+  StdDev (1, AirT_7m,IEEE4,False)
+  
+  Sample  (1, RH_17m,IEEE4)
+  Sample  (1, RH_12m,IEEE4)
+  Sample  (1, RH_7m,IEEE4)
+
+  Minimum (1, RH_17m,IEEE4,False,False)
+  Minimum (1, RH_12m,IEEE4,False,False)
+  Minimum (1, RH_7m,IEEE4,False,False)
+
+  Maximum (1, RH_17m,IEEE4,False,False)
+  Maximum (1, RH_12m,IEEE4,False,False)
+  Maximum (1, RH_7m,IEEE4,False,False)
+  
+  StdDev (1, RH_17m,IEEE4,False)
+  StdDev (1, RH_12m,IEEE4,False)
+  StdDev (1, RH_7m,IEEE4,False)
+  
+  Average (1, WS_12m,IEEE4,False)
+  Median (1, WS_12m,360,IEEE4,False)
+  Minimum (1, WS_12m,IEEE4,False,False)
+  Maximum (1, WS_12m,IEEE4,False,False)
+  StdDev (1, WS_12m,IEEE4,False)
+  
+  Sample  (1, WD_12m,IEEE4)
+
+	Average (1, SurfT_canopy,IEEE4,False)
+	Minimum (1, SurfT_canopy,IEEE4,False,False)
+	Maximum (1, SurfT_canopy,IEEE4,False,False)
+	StdDev (1, SurfT_canopy,IEEE4,False)
+	
+	Average (1, SBT_C,IEEE4,False)
+	Minimum (1, SBT_C,IEEE4,False,False)
+ 	Maximum (1, SBT_C,IEEE4,False,False)
+ 	StdDev (1, SBT_C,IEEE4,False)
+	
+  Average (1, SWD,IEEE4,False)
+	StdDev (1, SWD,IEEE4,False)
+  Average (1, SWU,IEEE4,False)
+	StdDev (1, SWU,IEEE4,False)
+	Average (1, LWD_cor,IEEE4,False)
+	StdDev (1, LWD_cor,IEEE4,False)
+	Average (1, LWU_cor,IEEE4,False)
+	StdDev (1, LWU_cor,IEEE4,False)
+	Average (1, Tb,IEEE4,False)
+	StdDev (1, Tb,IEEE4,False)
+	Average (1, albedo,IEEE4,False)
+	StdDev (1, albedo,IEEE4,False)
+  Average (1, Rn,IEEE4,False)
+  StdDev (1, Rn,IEEE4,False)
+
+  Average (1, PAR_up_17m,IEEE4,False)
+  StdDev (1, PAR_up_17m,IEEE4,False)  
+  Average (1, PAR_dn_17m,IEEE4,False)  
+  StdDev (1, PAR_dn_17m,IEEE4,False)  
+  
+  Average (1, T_CR3000,IEEE4,False)
+	StdDev (1, T_CR3000,IEEE4,False)
+  Average (1, V_CR3000,IEEE4,False)
+	Minimum (1, V_CR3000,IEEE4,False,False)
+	
+EndTable
+
+DataTable (Met5Min,TRUE,-1)
+	DataInterval (0,5,Min,100)
+	CardOut (0,FLUX_SIZE_CRD)
+ ' TableFile ("CRD:"&Status.SerialNumber(1,1)&".CP_ECF_Met30Min",64,-1,0,7,Day,0,0)
+  
+  Average (1, AirT_17m,IEEE4,False)
+  Average (1, AirT_12m,IEEE4,False)
+  Average (1, AirT_7m,IEEE4,False)
+
+  Minimum (1, AirT_17m,IEEE4,False,False)
+  Minimum (1, AirT_12m,IEEE4,False,False)
+  Minimum (1, AirT_7m,IEEE4,False,False)
+
+  Maximum (1, AirT_17m,IEEE4,False,False)
+  Maximum (1, AirT_12m,IEEE4,False,False)
+  Maximum (1, AirT_7m,IEEE4,False,False)
+
+  StdDev (1, AirT_17m,IEEE4,False)
+  StdDev (1, AirT_12m,IEEE4,False)
+  StdDev (1, AirT_7m,IEEE4,False)
+  
+  Sample  (1, RH_17m,IEEE4)
+  Sample  (1, RH_12m,IEEE4)
+  Sample  (1, RH_7m,IEEE4)
+
+  Minimum (1, RH_17m,IEEE4,False,False)
+  Minimum (1, RH_12m,IEEE4,False,False)
+  Minimum (1, RH_7m,IEEE4,False,False)
+
+  Maximum (1, RH_17m,IEEE4,False,False)
+  Maximum (1, RH_12m,IEEE4,False,False)
+  Maximum (1, RH_7m,IEEE4,False,False)
+  
+  StdDev (1, RH_17m,IEEE4,False)
+  StdDev (1, RH_12m,IEEE4,False)
+  StdDev (1, RH_7m,IEEE4,False)
+  
+  Average (1, WS_12m,IEEE4,False)
+  Median (1, WS_12m,60,IEEE4,False)
+  Minimum (1, WS_12m,IEEE4,False,False)
+  Maximum (1, WS_12m,IEEE4,False,False)
+  StdDev (1, WS_12m,IEEE4,False)
+  
+  Sample  (1, WD_12m,IEEE4)
+    
+	Average (1, SurfT_canopy,IEEE4,False)
+	Minimum (1, SurfT_canopy,IEEE4,False,False)
+	Maximum (1, SurfT_canopy,IEEE4,False,False)
+	StdDev (1, SurfT_canopy,IEEE4,False)
+	
+	Average (1, SBT_C,IEEE4,False)
+	Minimum (1, SBT_C,IEEE4,False,False)
+ 	Maximum (1, SBT_C,IEEE4,False,False)
+ 	StdDev (1, SBT_C,IEEE4,False)
+	
+  Average (1, SWD,IEEE4,False)
+	StdDev (1, SWD,IEEE4,False)
+  Average (1, SWU,IEEE4,False)
+	StdDev (1, SWU,IEEE4,False)
+	Average (1, LWD_cor,IEEE4,False)
+	StdDev (1, LWD_cor,IEEE4,False)
+	Average (1, LWU_cor,IEEE4,False)
+	StdDev (1, LWU_cor,IEEE4,False)
+	Average (1, Tb,IEEE4,False)
+	StdDev (1, Tb,IEEE4,False)
+	Average (1, albedo,IEEE4,False)
+	StdDev (1, albedo,IEEE4,False)
+  Average (1, Rn,IEEE4,False)
+  StdDev (1, Rn,IEEE4,False)
+
+  Average (1, PAR_up_17m,IEEE4,False)
+  StdDev (1, PAR_up_17m,IEEE4,False)  
+  Average (1, PAR_dn_17m,IEEE4,False)  
+  StdDev (1, PAR_dn_17m,IEEE4,False)  
+  
+  Average (1, T_CR3000,IEEE4,False)
+	StdDev (1, T_CR3000,IEEE4,False)
+  Average (1, V_CR3000,IEEE4,False)
+	Minimum (1, V_CR3000,IEEE4,False,False)
+	
+EndTable
+
+'Raw Summary Met Data
+DataTable (Met30Min_raw,TRUE,-1)
+	DataInterval (0,OUTPUT_INTERVAL,Min,100)
+	CardOut (0,FLUX_SIZE_CRD)
+  'TableFile ("CRD:"&Status.SerialNumber(1,1)&".CP_ECF_Met30Min_raw",64,-1,0,7,Day,0,0)
+	Average (5,CNR4_raw,IEEE4,0)
+	FieldNames("Avrg_SWD_raw, Avrg_SWU_raw, Avrg_LWD_raw, Avrg_LWU_raw, Avrg_Tb_raw")
+	StdDev (5,CNR4_raw,IEEE4,False)
+	FieldNames("STDev_SWD_raw, STDev_SWU_raw, STDev_LWD_raw, STDev_LWU_raw, STDev_Tb_raw")
+	
+	Average (1,TTmV,IEEE4,0)
+  FieldNames("Avrg_SurfaceT_raw")
+	StdDev (1,TTmV,IEEE4,0)
+  FieldNames("STDev_SurfaceT_raw")
+  
+	Average (2,PAR_raw,IEEE4,0)
+  FieldNames("Avrg_PARup_raw, Avrg_PARdn_raw")
+	StdDev (2,PAR_raw,IEEE4,0)
+  FieldNames("STDev_PARup_raw, STDev_PARdn_raw")
+  
+EndTable
+
+DataTable(CP_ECNF_17m_PRI,True,-1)
+	DataInterval(0,1,Min,10)
+  TableFile ("CRD:"&Status.SerialNumber(1,1)&".CP_ECNF_17m_PRI",64,-1,0,7,Day,0,0)
+  Median(1,PRI_17m,12,IEEE4,False)
+	Median(1,Down_532_17m,12,IEEE4,False)
+	Median(1,Down_570_17m,12,IEEE4,False)
+	Median(1,Up_532_17m,12,IEEE4,False)
+	Median(1,Up_570_17m,12,IEEE4,False)
+	Median(1,Ind_down_17m,12,IEEE4,False)
+	Median(1,Ind_up_17m,12,IEEE4,False)
+	Median(1,PRI_7m,12,IEEE4,False)
+	Median(1,Down_532_7m,12,IEEE4,False)
+	Median(1,Down_570_7m,12,IEEE4,False)
+	Median(1,Up_532_7m,12,IEEE4,False)
+	Median(1,Up_570_7m,12,IEEE4,False)
+	Median(1,Ind_down_7m,12,IEEE4,False)
+	Median(1,Ind_up_7m,12,IEEE4,False)
+EndTable
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+'Program
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+BeginProg
+  
+  'Turn on SW12V permanently (need for constant power for sensors)
+  SW12 (1,1)
+  SW12 (2,1)
+   
+	SDMSpeed (SDM_PER)
+  Scan (SCAN_INTERVAL,mSec,SCAN_BUFFER_SIZE,0)
+
+  'Measure CSAT3A @ 17m
+  CSAT3 (Sonic_CSAT3A,1,3,91,10)
+  
+  'Measure CSAT3B @ 7m
+  CSAT3 (Sonic_CSAT3B,1,4,91,10)
+
+	'Measure LI-7500 IRGA @ 17m
+	CS7500 (rho_c_LI7500,1,7,6)
+  rho_c_LI7500 = rho_c_LI7500*44.0095
+  rho_v_LI7500 = rho_v_LI7500*18.0153*0.001
+
+  'RM Young 05103 Wind Speed & Direction measurements @ 12m
+	PulseCount(WS,1,1,1,1,0.098,0)
+	BrHalf(WD,1,mV5000,27,3,1,5000,True,0,250,355,0)
+	If WD >= 360 OR WD < 0 Then WD = 0
+
+  'Output
+  CallTable TimeSeriesData
+  
+NextScan
+
+SlowSequence
+		
+  Scan (5,Sec,3,0)
+  'Measure CR3000 Diagnostics
+  PanelTemp (T_CR3000,250)
+  Battery (V_CR3000)
+
+	'Query sensor for 3 SDI-12 outputs.  Default address for all Decagon Digital sensors is 0.
+	SDI12Recorder (DownOut_17m(),3,0,"M!",1.0,0)
+	SDI12Recorder (UpOut_17m(),1,0,"M!",1.0,0)
+	'calculate NDVI from individual outputs of both sensors.  See equation 1 of the SRS manual
+	PRI_17m = ((Down_532_17m / Up_532_17m) - (Down_570_17m / Up_570_17m)) / ((Down_532_17m / Up_532_17m) + (Down_570_17m / Up_570_17m))
+
+	'Query sensor for 3 SDI-12 outputs.  Default address for all Decagon Digital sensors is 0.
+	SDI12Recorder (DownOut_7m(),7,0,"M!",1.0,0)
+	SDI12Recorder (UpOut_7m(),5,0,"M!",1.0,0)
+	'calculate NDVI from individual outputs of both sensors.  See equation 1 of the SRS manual
+	PRI_7m = ((Down_532_7m / Up_532_7m) - (Down_570_7m / Up_570_7m)) / ((Down_532_7m / Up_532_7m) + (Down_570_7m / Up_570_7m))
+		
+	'Measure CNR4
+  VoltDiff (CNR4(),4,mV200,1,True ,0,250,1.0,0)
+  BrHalf(CNR4(5),1,mV5000,9,1,1,2500,True,0,250,1,0)
+  Move (CNR4_raw,5,CNR4,5)
+  'Tb = (-3.9080e-3+SQR(3.9080e-3^2 - 4*-5.8019e-7*(-CNR4(5)/100+1)))/(2*-5.8019e-7) + 273.15
+  Rs = 1000*(CNR4(5)/(1-CNR4(5)))
+  Tb = 1/(1.0295e-3 + 2.391e-4*LN(Rs) + 1.568e-7*(LN(Rs))^3) - 273.15
+  SWD = CNR4(1)/pyrano_upper*1000 'calculate short wave down 
+  SWU = CNR4(2)/pyrano_lower*1000 'calculate short wave up
+  LWD_cor = CNR4(3)/pyrgeo_upper*1000 + 5.67e-8*(Tb)^4 'calculate temp corrected long wave down
+  LWU_cor = CNR4(4)/pyrgeo_lower*1000 + 5.67e-8*(Tb)^4 'calculate temp corrected long wave up
+  Rn = SWD - SWU + LWD_cor - LWU_cor
+  albedo = SWU/SWD
+  
+  'Measure HMP155 @17m
+  VoltDiff (AirT_17m,1,mV1000,7,True,0,_60Hz,.14,-80)
+  VoltDiff (RH_17m,1,mV1000,6,True,0,_60Hz,0.1,0)
+ 	If RH_17m > 100 AND RH_17m < 108 Then RH_17m = 100
+ 	
+  'Measure HMP45C @12m
+	VoltDiff (AirT_12m,1,mV1000,12,True,0,_60Hz,.1,-40)
+  VoltDiff (RH_12m,1,mV1000,11,True,0,_60Hz,0.1,0)
+ 	If RH_12m > 100 AND RH_12m < 108 Then RH_12m = 100
+
+  'HC2S3 Temperature & Relative Humidity Sensor measurements AirTC and RH:
+'  VoltDiff (AirT_7m,1,mV1000,13,True,0,_60Hz,0.1,-40)     
+'  VoltDiff (RH_7m,1,mV1000,14,True,0,_60Hz,0.1,0)
+  VoltSe(AirT_7m,1,mV1000,25,0,0,_60Hz,0.1,-40)   
+  VoltSe(RH_7m,1,mV1000,26,0,0,_60Hz,0.1,0)
+  If RH_7m > 100 AND RH_7m < 103 Then RH_7m = 100
+	
+	'LI190SB Quantum Sensor measurements
+	VoltDiff(PAR(1),2,mV20,9,True,0,250,1,0)
+	Move(PAR_raw(1),2,PAR(1),2)
+	If PAR(1) < 0 Then PAR(1) = 0
+	If PAR(2) < 0 Then PAR(2) = 0
+	PAR(1) = PAR(1)* 1000/LI190_Cal_1*0.604 'calculate flux density
+	PAR(2) = PAR(2)* 1000/LI190_Cal_2*0.604 'calculate flux density
+	
+	'SI-111 Precision Infrared Radiometer measurements of surface temp
+	'Measure SI-111 sensor body thermistor temperature
+	Therm109(SBT_C,1,10,2,0,250,1,0)
+	'Measure SI-111 output of thermopile
+	VoltDiff(TTmV,1,mV20,8,True,0,250,1,0)
+	'Calculate slope (m) and offset (b) coefficients for target temperature calculation
+	m = const_M1 + (const_M2*SBT_C) + (const_M3*SBT_C^2)
+	b = const_B1 + (const_B2*SBT_C) + (const_B3*SBT_C^2)
+	'Calculate target temperature using calculated slope (m) and offset (b)
+	SBT_K = SBT_C + 273.15
+	TT_K = SBT_K^4 + TTmV*m + b
+	TT_K = SQR(SQR(TT_K))
+	'Convert target temperature into desired units
+	SurfT_canopy = TT_K - 273.15
+
+  'Output
+	CallTable Flux30Min
+  CallTable Met30Min
+  CallTable Met5Min
+  CallTable Met30Min_raw 
+	CallTable CP_ECNF_17m_PRI
+ 
+NextScan
+EndProg
+
