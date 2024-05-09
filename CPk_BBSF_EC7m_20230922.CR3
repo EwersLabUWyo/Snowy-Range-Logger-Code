@@ -1,6 +1,7 @@
 'Program: CP Eddy-Covariance (CPk_BBSF_7m)
 'Written by: John Frank, edited by Mario Bretfeld
 'Last edits:
+'2023-09-22 by Alex Fox (changed SI111 calibration coeffs, fixed LW calculation)
 '2019-05-19 by Mario Bretfeld (changed fast reponse output name; added Pa to fast response output; changed WS_2m from sample to average, added median WS_2m)
 '2019-05-02 by Mario Bretfeld (added PRI sensors)
 '2019-04-24 by Mario Bretfeld (fixed WS and WD output, rearranged AirT output, fixed terminology of PAR sensors)
@@ -51,12 +52,12 @@ Const FLUX_SIZE_CPU = Ceiling ((NUM_DAY_CPU*1440)/OUTPUT_INTERVAL) 'Size of flux
 Const FLUX_SIZE_CRD = Ceiling ((NUM_DAY_CRD*1440)/OUTPUT_INTERVAL) 'Size of flux data table on CRD [days].
 Const SDM_PER = 30         'Unique value, default SDM clock speed.
 
-Const const_M1 = 1411810000  'Unique IR sensor
-Const const_M2 = 7292450     'Unique IR sensor
-Const const_M3 = 69465       'Unique IR sensor
-Const const_B1 = 5455940     'Unique IR sensor
-Const const_B2 = 130581      'Unique IR sensor
-Const const_B3 = 2428.18     'Unique IR sensor
+Const const_M1 = 1391540000  'Unique IR sensor SI111 5563
+Const const_M2 = 8388630     'Unique IR sensor SI111 5563
+Const const_M3 = 89392.3       'Unique IR sensor SI111 5563
+Const const_B1 = -12061600     'Unique IR sensor SI111 5563
+Const const_B2 = 60675.8      'Unique IR sensor SI111 5563
+Const const_B3 = 2115.76     'Unique IR sensor SI111 5563
 
 Const pyrano_upper = 14.42      'Unique up pyranometer sensitivity from CNR4 cal sheet
 Const pyrano_lower = 12.58      'Unique down pyranometer sensitivity from CNR4 cal sheet
@@ -450,8 +451,8 @@ SlowSequence
   Tb = 1/(1.0295e-3 + 2.391e-4*LN(Rs) + 1.568e-7*(LN(Rs))^3) - 273.15
   SWD = CNR4(1)/pyrano_upper*1000 'calculate short wave down 
   SWU = CNR4(2)/pyrano_lower*1000 'calculate short wave up
-  LWD_cor = CNR4(3)/pyrgeo_upper*1000 + 5.67e-8*(Tb)^4 'calculate temp corrected long wave down
-  LWU_cor = CNR4(4)/pyrgeo_lower*1000 + 5.67e-8*(Tb)^4 'calculate temp corrected long wave up
+  LWD_cor = CNR4(3)/pyrgeo_upper*1000 + 5.67e-8*(Tb + 273.15)^4 'calculate temp corrected long wave down
+  LWU_cor = CNR4(4)/pyrgeo_lower*1000 + 5.67e-8*(Tb + 273.15)^4 'calculate temp corrected long wave up
   Rn = SWD - SWU + LWD_cor - LWU_cor
   albedo = SWU/SWD
   
