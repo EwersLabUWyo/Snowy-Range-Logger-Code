@@ -1,6 +1,8 @@
 'Program: CP Eddy-Covariance (CPk_BBSF_7m)
 'Written by: John Frank, edited by Mario Bretfeld
 'Last edits:
+'2024-04-07 AF updated SI1211 coeffs
+'2023-10-25 AF NEW CNR4
 '2023-09-22 by Alex Fox (changed SI111 calibration coeffs, fixed LW calculation)
 '2019-05-19 by Mario Bretfeld (changed fast reponse output name; added Pa to fast response output; changed WS_2m from sample to average, added median WS_2m)
 '2019-05-02 by Mario Bretfeld (added PRI sensors)
@@ -52,17 +54,18 @@ Const FLUX_SIZE_CPU = Ceiling ((NUM_DAY_CPU*1440)/OUTPUT_INTERVAL) 'Size of flux
 Const FLUX_SIZE_CRD = Ceiling ((NUM_DAY_CRD*1440)/OUTPUT_INTERVAL) 'Size of flux data table on CRD [days].
 Const SDM_PER = 30         'Unique value, default SDM clock speed.
 
-Const const_M1 = 1391540000  'Unique IR sensor SI111 5563
-Const const_M2 = 8388630     'Unique IR sensor SI111 5563
-Const const_M3 = 89392.3       'Unique IR sensor SI111 5563
-Const const_B1 = -12061600     'Unique IR sensor SI111 5563
-Const const_B2 = 60675.8      'Unique IR sensor SI111 5563
-Const const_B3 = 2115.76     'Unique IR sensor SI111 5563
+Const const_M1 = 1287610000  'Unique IR sensor SI111 5357
+Const const_M2 = 7795740     'Unique IR sensor SI111 5357
+Const const_M3 = 88116.1       'Unique IR sensor SI111 5357
+Const const_B1 = -7721050    'Unique IR sensor SI111 5357
+Const const_B2 = 1.56466      'Unique IR sensor SI111 5357
+Const const_B3 = -0.00057     'Unique IR sensor SI111 5357
 
-Const pyrano_upper = 14.42      'Unique up pyranometer sensitivity from CNR4 cal sheet
-Const pyrano_lower = 12.58      'Unique down pyranometer sensitivity from CNR4 cal sheet
-Const pyrgeo_upper = 14.15      'Unique up pyrgeometer sensitivity from CNR4 cal sheet
-Const pyrgeo_lower = 13.54      'Unique down pyrgeometer sensitviity from CNR4 cal sheet
+'CNR4 131353
+Const pyrano_upper = 13.6      'Unique up pyranometer sensitivity from CNR4 cal sheet
+Const pyrano_lower = 13.2      'Unique down pyranometer sensitivity from CNR4 cal sheet
+Const pyrgeo_upper = 14.44      'Unique up pyrgeometer sensitivity from CNR4 cal sheet
+Const pyrgeo_lower = 11.32      'Unique down pyrgeometer sensitviity from CNR4 cal sheet
 
 Const LI190_Cal_1 = 6.57     'Unique calibration factor for LI190SB #1 calibration sheet
 Const LI190_Cal_2 = 6.65     'Unique calibration factor for LI190SB #2 calibration sheet
