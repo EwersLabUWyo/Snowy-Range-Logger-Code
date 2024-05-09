@@ -1,0 +1,396 @@
+'Code for 2m EC system in CPk_BBUF
+'Author: Mario Bretfeld
+'Last Edit: 2019-02-13
+
+'***** Begininng of CNR1 Wiring  
+'ANALOG CDM-A116 CHANNELS 
+'1H CNR1 Pyranometer Upper signal (red) 
+'1L CNR1 Pyranometer Upper signal reference (blue) 
+'gnd jumper to 1L 
+' 
+'2H CNR1 Pyranometer Lower signal (white) 
+'2L CNR1 Pyranometer Lower signal reference (black) 
+'gnd jumper to 2L 
+' 
+'3H CNR1 Pyrgeometer Upper signal (grey) 
+'3L CNR1 Pyrgeometer Upper signal reference (yellow) 
+'gnd jumper to 3L 
+' 
+'4H CNR1 Pyrgeometer Lower signal (brown) 
+'4L CNR1 Pyrgeometer Lower signal reference (green) 
+'gnd jumper to 4L 
+
+'CNR1 shield (thick black wire from CNR1 sensor lead)
+'If the CNR1 rod is grounded to the mast it is advised not to attach the shield on the datalogger side
+'this might cause ground loops and offset the signal (see Kipp & Zonen manual)
+' 
+'5H Module 4WPB100 H
+'5L Module 4WPB100 L
+'gnd Module 4WPB100 gnd
+'
+'4WPB100-L (orange)
+'4WPB100-gnd (blue)
+'
+'6H voltage+ (green)
+'6L voltage- (yellow)
+
+'VX2 CNR1 thermistor voltage excitation (thick black wire from 4WPB100)
+
+'CNR1 shield (thick black wire from CNR1 temperature lead) 
+'If the CNR1 rod is grounded to the mast it is advised not to attach the shield on the datalogger side
+'this might cause ground loops and offset the signal (see Kipp & Zonen manual)
+'black and white wires are not used (they would be used for the thermistor option)
+'*** End of CNR1 wiring 
+
+'*** Beginning of LI190SB 
+'7H      LI190SB #1 signal (red)
+'7L      LI190SB #1 signal reference (black)
+'gnd     LI190SB #1 shield (clear)
+
+'8H      LI190SB #2 signal (red)
+'8L      LI190SB #2 signal reference (black)
+'gnd     LI190SB #2 shield (clear)
+'*** End of LI190SB wiring
+
+'****Beginning of HC2S3 Wiring***
+'9H       Brown
+'9L       White
+'12v      Green
+'gnd      clear, yellow, grey
+'****End of HMP45C Wiring***
+
+'****Beginning of SI-111 Wiring***
+'10H      Green
+'11H      Red
+'11L      Black
+'gnd      Shield
+'gnd      Blue
+'X3       White
+'****End of SI-111 Wiring***
+
+
+
+
+'*** Station constants.
+'Start of Constants Customization Section
+
+Const SCAN_INTERVAL = 100  'Unique value, measurement rate 100 ms (10 Hz) or 50 ms (20 Hz).
+Const OUTPUT_INTERVAL = 30 'Unique value, online flux data output interval in minutes.
+Const SCAN_BUFFER_SIZE = 60*INT (1000/SCAN_INTERVAL)     'Compute a 60 second scan buffer.
+Const NUM_DAY_CRD = 44    'Unique value, number of days of flux data to store on a 16 GB CF card (44 days = 2 GB). This value will vary with configuration.
+Const NUM_DAY_CPU = 1                                              'Number of days of flux data to store on the CPU.
+Const FLUX_SIZE_CPU = Ceiling ((NUM_DAY_CPU*1440)/OUTPUT_INTERVAL) 'Size of flux data table on CPU [days].
+Const FLUX_SIZE_CRD = Ceiling ((NUM_DAY_CRD*1440)/OUTPUT_INTERVAL) 'Size of flux data table on CRD [days].
+Const SDM_PER = 30         'Unique value, default SDM clock speed.
+
+'Const snow_height_m = 3.2  'height of snow depth sensor
+
+Const const_M1 = 1289080000  'Unique IR sensor SN: 5357
+Const const_M2 = 7576470     'Unique IR sensor
+Const const_M3 = 83708.9     'Unique IR sensor
+Const const_B1 = -5908500    'Unique IR sensor
+Const const_B2 = 165059      'Unique IR sensor
+Const const_B3 = -5874.99    'Unique IR sensor
+
+Const pyrano_upper = 14.42      'Unique up pyranometer sensitivity from CNR1 cal sheet
+Const pyrano_lower = 12.58      'Unique down pyranometer sensitivity from CNR1 cal sheet
+Const pyrgeo_upper = 14.15      'Unique up pyrgeometer sensitivity from CNR1 cal sheet
+Const pyrgeo_lower = 13.54      'Unique down pyrgeometer sensitviity from CNR1 cal sheet
+
+Const LI190_Cal_1 = 6.56     'Unique calibration factor for LI190SB #1 calibration sheet SN: Q51405
+Const LI190_Cal_2 = 6.39     'Unique calibration factor for LI190SB #2 calibration sheet SN: Q33201
+
+Public BattV, CDM1BattV
+Public PTemp_C, CDMPTempC(4)
+'Public SR50A(2)
+'Public TCDT
+'Public DBTCDT
+
+'CNR1 Net Rad
+Public SWD : Units SWD = W/m^2 'shortwave down
+Public SWU : Units SWU = W/m^2 'shortwave up
+Public Tb : Units Tb = C 'block temp
+Public LWD_cor : Units LWD_cor = W/m^2 'temp corrected longwave down
+Public LWU_cor : Units LWU_cor = W/m^2 'temp corrected longwave up
+Public albedo : Units albedo = W/m^2 'albedo
+Public Rn : Units Rn = W/m^2 'netrad
+Dim CNR1(5) 'sensor readings tmp storage
+Dim CNR1_raw(5) 'raw data 
+
+'LI-190SB PAR
+Public PAR(2) : Units PAR = umol/s/m^2
+Alias PAR(1) = PAR_up                        'flux density for LI190SB facing down (measuring upwards PAR)
+Alias PAR(2) = PAR_dn                        'flux density for LI190SB facing up (measuring downwards PAR)
+Dim PAR_raw(2) 'raw data 
+
+'HMP & RTD for RH/AirT
+Public AirT : Units AirT = C
+Public RH : Units RH = %
+
+'CSAT3 Sonic Anemometer
+Public sonic_irga(12)
+Alias sonic_irga(1) = Ux
+Alias sonic_irga(2) = Uy
+Alias sonic_irga(3) = Uz
+Alias sonic_irga(4) = Ts
+Alias sonic_irga(5) = diag_sonic
+Alias sonic_irga(6) = CO2
+Alias sonic_irga(7) = H2O
+Alias sonic_irga(8) = diag_irga
+Alias sonic_irga(9) = cell_tmpr
+Alias sonic_irga(10) = cell_press
+Alias sonic_irga(11) = CO2_sig_strgth
+Alias sonic_irga(12) = H2O_sig_strgth
+
+'SB 111 Surface Temp
+Dim m                               'slope for target T calculation
+Dim b                               'offset for target T calculation
+Dim TT_K                            'SB111 Target Temp (K)
+Dim SBT_K                           'SB111 Block Temp (K)
+Public SurfT : Units SurfT = Deg C                 'SI111 IR Target Temp (C)
+Public SBT_C : Units SBT_C = Deg C               'SI111 Block Temp (C)
+Public TTmV : Units TTmV = mV                    'SI111 Target raw
+
+'Snow Sensor
+'Alias SR50A(1) = DT
+'Alias SR50A(2) = Q
+
+Units BattV = V
+Units PTemp_C = C
+Units Ux = m/s
+Units Uy = m/s
+Units Uz = m/s
+Units Ts = C
+Units diag_sonic = arb
+Units CO2 = mg/m^3
+Units H2O = g/m^3
+Units diag_irga = arb
+Units cell_tmpr = C
+Units cell_press = kPa
+Units CO2_sig_strgth = arb
+Units H2O_sig_strgth = arb
+
+DataTable (TimeSeriesData,TRUE,-1)
+ DataInterval (0,100,mSec,10)
+ TableFile ("CRD:"&Status.SerialNumber(1,1)&".CPk_BBUF2m_10Hz",64,-1,0,1,Day,0,0)
+ Sample (12,Ux,IEEE4)
+EndTable
+
+DataTable (Flux30Min,TRUE,-1)
+	DataInterval (0,OUTPUT_INTERVAL,Min,100)
+	CardOut (0,FLUX_SIZE_CRD)
+		
+	Average (12,Ux,IEEE4,0)
+	StdDev (12,Ux,IEEE4,0)	
+	Average(1,BattV,IEEE4,0)
+	Minimum(1,BattV,IEEE4,0,False)
+	Average(1,PTemp_C,IEEE4,False)
+'	Average(1,DT,IEEE4,False) 'snow sensor
+'	StdDev(1,DT,IEEE4,False) 'snow sensor
+'	Average(1,Q,IEEE4,False) 'snow sensor
+'	StdDev(1,Q,IEEE4,False) 'snow sensor
+'	Average(1,TCDT,IEEE4,False) 'snow sensor
+'	StdDev(1,TCDT,IEEE4,False) 'snow sensor
+'	Average(1,DBTCDT,IEEE4,False) 'snow sensor
+'	StdDev(1,DBTCDT,IEEE4,False) 'snow sensor
+EndTable
+
+
+'Summary Met Data
+DataTable (Met30Min,TRUE,-1)
+	DataInterval (0,OUTPUT_INTERVAL,Min,100)
+	CardOut (0,FLUX_SIZE_CRD)
+ ' TableFile ("CRD:"&Status.SerialNumber(1,1)&".CP_ECF_Met30Min",64,-1,0,7,Day,0,0)
+  
+  Average (1, AirT,IEEE4,False)
+  Minimum (1, AirT,IEEE4,False,False)
+  Maximum (1, AirT,IEEE4,False,False)
+  StdDev (1, AirT,IEEE4,False)
+
+  Sample  (1, RH,IEEE4)
+  Minimum (1, RH,IEEE4,False,False)
+  Maximum (1, RH,IEEE4,False,False)
+  StdDev (1, RH,IEEE4,False)
+
+	Average (1, SurfT,IEEE4,False)
+	Minimum (1, SurfT,IEEE4,False,False)
+	Maximum (1, SurfT,IEEE4,False,False)
+	StdDev (1, SurfT,IEEE4,False)
+	
+	Average (1, SBT_C,IEEE4,False)
+	Minimum (1, SBT_C,IEEE4,False,False)
+ 	Maximum (1, SBT_C,IEEE4,False,False)
+ 	StdDev (1, SBT_C,IEEE4,False)
+	
+  Average (1, SWD,IEEE4,False)
+	StdDev (1, SWD,IEEE4,False)
+  Average (1, SWU,IEEE4,False)
+	StdDev (1, SWU,IEEE4,False)
+	Average (1, LWD_cor,IEEE4,False)
+	StdDev (1, LWD_cor,IEEE4,False)
+	Average (1, LWU_cor,IEEE4,False)
+	StdDev (1, LWU_cor,IEEE4,False)
+	Average (1, Tb,IEEE4,False)
+	StdDev (1, Tb,IEEE4,False)
+	Average (1, albedo,IEEE4,False)
+	StdDev (1, albedo,IEEE4,False)
+  Average (1, Rn,IEEE4,False)
+  StdDev (1, Rn,IEEE4,False)
+
+  Average (1, PAR_up,IEEE4,False)
+  StdDev (1, PAR_up,IEEE4,False)  
+  Average (1, PAR_dn,IEEE4,False)  
+  StdDev (1, PAR_dn,IEEE4,False)  
+  
+  Average (1, PTemp_C,IEEE4,False)
+	StdDev (1, PTemp_C,IEEE4,False)
+  Average (1, BattV,IEEE4,False)
+	Minimum (1, BattV,IEEE4,False,False)
+	
+EndTable
+
+'Summary Met Data
+DataTable (Met5Min,TRUE,-1)
+	DataInterval (0,5,Min,100)
+	CardOut (0,FLUX_SIZE_CRD)
+ ' TableFile ("CRD:"&Status.SerialNumber(1,1)&".CP_ECF_Met30Min",64,-1,0,7,Day,0,0)
+  
+  Average (1, AirT,IEEE4,False)
+  Minimum (1, AirT,IEEE4,False,False)
+  Maximum (1, AirT,IEEE4,False,False)
+  StdDev (1, AirT,IEEE4,False)
+
+  Sample  (1, RH,IEEE4)
+  Minimum (1, RH,IEEE4,False,False)
+  Maximum (1, RH,IEEE4,False,False)
+  StdDev (1, RH,IEEE4,False)
+
+	Average (1, SurfT,IEEE4,False)
+	Minimum (1, SurfT,IEEE4,False,False)
+	Maximum (1, SurfT,IEEE4,False,False)
+	StdDev (1, SurfT,IEEE4,False)
+	
+	Average (1, SBT_C,IEEE4,False)
+	Minimum (1, SBT_C,IEEE4,False,False)
+ 	Maximum (1, SBT_C,IEEE4,False,False)
+ 	StdDev (1, SBT_C,IEEE4,False)
+	
+  Average (1, SWD,IEEE4,False)
+	StdDev (1, SWD,IEEE4,False)
+  Average (1, SWU,IEEE4,False)
+	StdDev (1, SWU,IEEE4,False)
+	Average (1, LWD_cor,IEEE4,False)
+	StdDev (1, LWD_cor,IEEE4,False)
+	Average (1, LWU_cor,IEEE4,False)
+	StdDev (1, LWU_cor,IEEE4,False)
+	Average (1, Tb,IEEE4,False)
+	StdDev (1, Tb,IEEE4,False)
+	Average (1, albedo,IEEE4,False)
+	StdDev (1, albedo,IEEE4,False)
+  Average (1, Rn,IEEE4,False)
+  StdDev (1, Rn,IEEE4,False)
+
+  Average (1, PAR_up,IEEE4,False)
+  StdDev (1, PAR_up,IEEE4,False)  
+  Average (1, PAR_dn,IEEE4,False)  
+  StdDev (1, PAR_dn,IEEE4,False)  
+  
+  Average (1, PTemp_C,IEEE4,False)
+	StdDev (1, PTemp_C,IEEE4,False)
+  Average (1, BattV,IEEE4,False)
+	Minimum (1, BattV,IEEE4,False,False)
+	
+EndTable
+
+'Raw Summary Met Data
+DataTable (Met30Min_raw,TRUE,-1)
+	DataInterval (0,OUTPUT_INTERVAL,Min,100)
+	CardOut (0,FLUX_SIZE_CRD)
+  'TableFile ("CRD:"&Status.SerialNumber(1,1)&".CP_ECF_Met30Min_raw",64,-1,0,7,Day,0,0)
+	Average (5,CNR1_raw,IEEE4,0)
+	FieldNames("Avrg_SWD_raw, Avrg_SWU_raw, Avrg_LWD_raw, Avrg_LWU_raw, Avrg_Tb_raw")
+	StdDev (5,CNR1_raw,IEEE4,False)
+	FieldNames("STDev_SWD_raw, STDev_SWU_raw, STDev_LWD_raw, STDev_LWU_raw, STDev_Tb_raw")
+	
+	Average (1,TTmV,IEEE4,0)
+  FieldNames("Avrg_SurfaceT_raw")
+	StdDev (1,TTmV,IEEE4,0)
+  FieldNames("STDev_SurfaceT_raw")
+  
+	Average (2,PAR_raw,IEEE4,0)
+  FieldNames("Avrg_PARup_raw, Avrg_PARdn_raw")
+	StdDev (2,PAR_raw,IEEE4,0)
+  FieldNames("STDev_PARup_raw, STDev_PARdn_raw")
+  
+EndTable
+
+BeginProg
+  SDMSpeed (SDM_PER)
+  Scan (SCAN_INTERVAL,mSec,SCAN_BUFFER_SIZE,0)
+
+  EC100 (Ux,1,1)
+  CallTable TimeSeriesData
+ NextScan
+
+SlowSequence
+ Scan (5,Sec,3,0)
+   
+  'Measure CR6 Diagnostics
+  PanelTemp (PTemp_C,250)
+  Battery (BattV)
+  CDM_Battery(CDM_A116,1,CDM1BattV)
+  CDM_PanelTemp(CDM_A116,1,CDMPTempC(),4,1,250)
+  
+	'Measure CNR1 on CDMA
+	CDM_VoltDiff(CDM_A116,1,CNR1(1),4,mV200,1,True,0,250,1.0,0)
+  CDM_BrHalf4W(CDM_A116,1,CNR1(5),1,mV200C,mV200C,5,X2,1,2100,True,True,0,250,1,0)
+  Move(CNR1_raw,5,CNR1,5)
+  PRT(Tb,1,CNR1(5),1,0)
+  SWD = CNR1(1)/pyrano_upper*1000 'calculate short wave down 
+  SWU = CNR1(2)/pyrano_lower*1000 'calculate short wave up
+  LWD_cor = CNR1(3)/pyrgeo_upper*1000 + 5.67e-8*(Tb + 273.15)^4 'calculate temp corrected long wave down
+  LWU_cor = CNR1(4)/pyrgeo_lower*1000 + 5.67e-8*(Tb + 273.15)^4 'calculate temp corrected long wave up
+  Rn = SWD - SWU + LWD_cor - LWU_cor
+  albedo = SWU/SWD
+  
+ 'HC2S3 (constant power) Temperature & Relative Humidity Sensor measurements 'AirTC' and 'RH' on CDM-A116 with CPI address 1
+	CDM_VoltSe(CDM_A116,1,AirT,1,mV1000,17,0,0,60,0.1,-40)
+	CDM_VoltSe(CDM_A116,1,RH,1,mV1000,18,0,0,60,0.1,0)
+	If RH > 100 AND RH < 103 Then RH = 100
+
+	'LI190SB Quantum Sensor measurements 'PAR_Tot' and 'PAR_Den' on CDM-A116 with CPI address 1
+	CDM_VoltDiff(CDM_A116,1,PAR(1),2,mV200,7,True,0,250,1,0)
+	Move(PAR_raw(1),2,PAR(1),2)
+	If PAR(1) < 0 Then PAR(1) = 0
+	If PAR(2) < 0 Then PAR(2) = 0
+	PAR(1) = PAR(1)* 1000/LI190_Cal_1*0.604 'calculate flux density
+	PAR(2) = PAR(2)* 1000/LI190_Cal_2*0.604 'calculate flux density
+
+	'SI-111 Precision Infrared Radiometer measurements of surface temp
+	'Measure SI-111 sensor body thermistor temperature
+	CDM_Therm109(CDM_A116,1,SBT_C,1,19,3,0,250,1,0)
+	'Measure SI-111 output of thermopile
+	CDM_VoltDiff(CDM_A116,1,TTmV,1,mV200,11,True,0,250,1,0)
+	'Calculate slope (m) and offset (b) coefficients for target temperature calculation
+	m = const_M1 + (const_M2*SBT_C) + (const_M3*SBT_C^2)
+	b = const_B1 + (const_B2*SBT_C) + (const_B3*SBT_C^2)
+	'Calculate target temperature using calculated slope (m) and offset (b)
+	SBT_K = SBT_C + 273.15
+	TT_K = SBT_K^4 + TTmV*m + b
+	TT_K = SQR(SQR(TT_K))
+	'Convert target temperature into desired units
+	SurfT = TT_K - 273.15
+  
+	'SR50A Sonic Ranging Sensor (SDI-12 Output) measurements 'DT' and 'Q' and calculations 'TCDT' and 'DBTCDT'
+'	SDI12Recorder(SR50A(),U1,"0","M1!",1,0,-1)
+'	TCDT = DT*SQR((cell_tmpr + 273.15)/273.15)
+'	DBTCDT = snow_height_m - TCDT  
+	
+  'Output
+  CallTable Flux30Min 
+  CallTable Met30Min
+  CallTable Met30Min_raw
+  CallTable Met5Min 
+  
+ NextScan
+EndProg
