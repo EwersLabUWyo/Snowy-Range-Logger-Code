@@ -1,5 +1,6 @@
 'Code for 2m EC system in CPk_BBUF
 'Author: Mario Bretfeld
+'Last Edit: 2019-05-19 by Mario Bretfeld (changed fast response output name)
 'Last Edit: 2019-02-13
 
 '***** Begininng of CNR1 Wiring  
@@ -174,7 +175,7 @@ Units H2O_sig_strgth = arb
 
 DataTable (TimeSeriesData,TRUE,-1)
  DataInterval (0,100,mSec,10)
- TableFile ("CRD:"&Status.SerialNumber(1,1)&".CPk_BBUF2m_10Hz",64,-1,0,1,Day,0,0)
+ TableFile ("CRD:"&Status.SerialNumber(1,1)&".CPk_BBUF3m_10Hz",64,-1,0,1,Day,0,0)
  Sample (12,Ux,IEEE4)
 EndTable
 
