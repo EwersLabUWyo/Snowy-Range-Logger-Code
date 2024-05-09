@@ -1,0 +1,88 @@
+'CR1000X Series
+'Created by Short Cut (4.0)
+
+'Declare Variables and Units
+Dim LCount
+Public BattV
+Public PTemp_C
+Public Birba_T_C(4)
+Public TC_MUX_Ref_T_C
+
+Units BattV=Volts
+Units PTemp_C=Deg C
+Units Birba_T_C=Deg C
+Units TC_MUX_Ref_T_C=Deg C
+
+'Define Data Tables
+DataTable(Birba,True,-1)
+	DataInterval(0,30,Min,10)
+	'The following TableFile instruction causes new data to be copied to an optional SC115 Flash
+	'Memory Drive the moment it is plugged into the CS I/O port of the datalogger.
+	'This mode of operation is referred to as Data Collection Mode (see the SC115 manual).
+	'This TableFile instruction has no effect if an SC115 is never plugged into the datalogger.
+	TableFile("USB:"+Status.SerialNumber+"Birba",8,-1,0,0,Hr,0,0)
+	Average(1,PTemp_C,FP2,False)
+	Maximum(1,PTemp_C,FP2,False,False)
+	Minimum(1,PTemp_C,FP2,False,False)
+	StdDev(1,PTemp_C,FP2,False)
+	Average(1,Birba_T_C(1),FP2,False)
+	Average(1,Birba_T_C(2),FP2,False)
+	Average(1,Birba_T_C(3),FP2,False)
+	Average(1,Birba_T_C(4),FP2,False)
+	Maximum(1,Birba_T_C(1),FP2,False,False)
+	Maximum(1,Birba_T_C(2),FP2,False,False)
+	Maximum(1,Birba_T_C(3),FP2,False,False)
+	Maximum(1,Birba_T_C(4),FP2,False,False)
+	Minimum(1,Birba_T_C(1),FP2,False,False)
+	Minimum(1,Birba_T_C(2),FP2,False,False)
+	Minimum(1,Birba_T_C(3),FP2,False,False)
+	Minimum(1,Birba_T_C(4),FP2,False,False)
+	StdDev(1,Birba_T_C(1),FP2,False)
+	StdDev(1,Birba_T_C(2),FP2,False)
+	StdDev(1,Birba_T_C(3),FP2,False)
+	StdDev(1,Birba_T_C(4),FP2,False)
+	Average(1,TC_MUX_Ref_T_C,FP2,False)
+	Maximum(1,TC_MUX_Ref_T_C,FP2,False,False)
+	Minimum(1,TC_MUX_Ref_T_C,FP2,False,False)
+	StdDev(1,TC_MUX_Ref_T_C,FP2,False)
+EndTable
+
+DataTable(Table2,True,-1)
+	DataInterval(0,30,Min,10)
+	'The following TableFile instruction causes new data to be copied to an optional SC115 Flash
+	'Memory Drive the moment it is plugged into the CS I/O port of the datalogger.
+	'This mode of operation is referred to as Data Collection Mode (see the SC115 manual).
+	'This TableFile instruction has no effect if an SC115 is never plugged into the datalogger.
+	TableFile("USB:"+Status.SerialNumber+"Table2",8,-1,0,0,Hr,0,0)
+	Minimum(1,BattV,FP2,False,False)
+EndTable
+
+'Main Program
+BeginProg
+	'Main Scan
+	Scan(30,Sec,1,0)
+		'Default CR1000X Datalogger Battery Voltage measurement 'BattV'
+		Battery(BattV)
+		'Default CR1000X Datalogger Wiring Panel Temperature measurement 'PTemp_C'
+		PanelTemp(PTemp_C,60)
+		'Turn AM16/32 Multiplexer On
+		PortSet(C2,1)
+		Delay(0,150,mSec)
+		LCount=1
+		SubScan(0,uSec,4)
+			'Switch to next AM16/32 Multiplexer channel
+			PulsePort(C1,10000)
+			'Type T Thermocouple measurements 'Birba_T_C()' on the AM16/32 Multiplexer
+			TCDiff(Birba_T_C(LCount),1,mV200C,1,TypeT,TC_MUX_Ref_T_C,True,0,60,1,0)
+			LCount=LCount+1
+		NextSubScan
+		'Turn AM16/32 Multiplexer Off
+		PortSet(C2,0)
+		Delay(0,150,mSec)
+		'Type T Thermocouple measurements 'TC_MUX_Ref_T_C'
+		TCDiff(TC_MUX_Ref_T_C,1,mv200C,2,TypeT,PTemp_C,True,0,60,1,0)
+		'Call Data Tables and Store Data
+		CallTable Birba
+		CallTable Table2
+	NextScan
+EndProg
