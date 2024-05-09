@@ -1,6 +1,8 @@
 'Program: CP Eddy-Covariance (CPk_BBSF_7m)
 'Written by: John Frank, edited by Mario Bretfeld
 'Last edits:
+'2019-05-02 by Mario Bretfeld (added PRI sensors)
+'2019-04-24 by Mario Bretfeld (fixed WS and WD output, rearranged AirT output, fixed terminology of PAR sensors)
 '2019-02-25 by Mario Bretfeld (fixed NetRad calculation; added 5-min met data; fixed SDev Raw output of netrad) 
 '2018-11-19 by Sasha Ivans (fix data storage issue)
 
@@ -93,7 +95,7 @@ Public SWU : Units SWU = W/m^2 'shortwave up
 Public Tb : Units Tb = C 'block temp
 Public LWD_cor : Units LWD_cor = W/m^2 'temp corrected longwave down
 Public LWU_cor : Units LWU_cor = W/m^2 'temp corrected longwave up
-Public albedo : Units albedo = W/m^2 'albedo
+Public albedo : Units albedo = % 'albedo
 Public Rn : Units Rn = W/m^2 'netrad
 Dim CNR4(5) 'sensor readings tmp storage
 Dim CNR4_raw(5) 'raw data 
@@ -101,8 +103,8 @@ Dim Rs ' for calculation of block temperature
 
 'LI-190SB PAR
 Public PAR(2) : Units PAR = umol/s/m^2
-Alias PAR(1) = PAR_up                        'flux density for LI190SB facing down (measuring upwards PAR)
-Alias PAR(2) = PAR_dn                        'flux density for LI190SB facing up (measuring downwards PAR)
+Alias PAR(1) = PAR_up                        'flux density for LI190SB facing up (measuring downwards PAR)
+Alias PAR(2) = PAR_dn                        'flux density for LI190SB facing down (measuring upwards PAR)
 Dim PAR_raw(2) 'raw data 
 
 'HMP & RTD for RH/AirT
@@ -113,12 +115,10 @@ Public RH_6m : Units RH_6m = %
 Dim AirT_raw(3)
 
 'RM Young for Wind Speed/Wind Direction
-Public WS(2) : Units WS = m/s 
-Public WD(2) : Units WD = degrees
-Alias WS(1) = WS_2m
-Alias WS(2) = WS_4m
-Alias WD(1) = WD_2m
-Alias WD(2) = WD_4m
+Public WS : Units WS = m/s 
+Public WD : Units WD = degrees
+Alias WS = WS_2m
+Alias WD = WD_2m
 
 'SB 111 Surface Temp
 Dim m                               'slope for target T calculation
@@ -128,6 +128,37 @@ Dim SBT_K                           'SB111 Block Temp (K)
 Public SurfT : Units SurfT = Deg C                 'SI111 IR Target Temp (C)
 Public SBT_C : Units SBT_C = Deg C               'SI111 Block Temp (C)
 Public TTmV : Units TTmV = mV                    'SI111 Target raw
+
+'PRI variables
+Public UpOut_7m(3)
+Public DownOut_7m(3)
+
+Public PRI_7m
+
+Alias UpOut_7m(1) = Up_532_7m
+Alias DownOut_7m(1) = Down_532_7m
+Alias UpOut_7m(2) = Up_570_7m
+Alias DownOut_7m(2) = Down_570_7m
+Alias UpOut_7m(3) = Ind_up_7m
+Alias DownOut_7m(3) = Ind_down_7m
+
+Units Up_532_7m = W/m^2 nm
+Units Down_532_7m = W/m^2 nm sr
+Units Up_570_7m = W/m^2 nm
+Units Down_570_7m = W/m^2 nm sr
+
+'PRI variables
+Public DownOut_2m(3)
+
+Public PRI_2m
+
+Alias DownOut_2m(1) = Down_532_2m
+Alias DownOut_2m(2) = Down_570_2m
+Alias DownOut_2m(3) = Ind_down_2m
+
+Units Down_532_2m = W/m^2 nm sr
+Units Down_570_2m = W/m^2 nm sr
+
 
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 'Output Definitions
@@ -182,26 +213,34 @@ DataTable (Met30Min,TRUE,-1)
 	CardOut (0,FLUX_SIZE_CRD)
  ' TableFile ("CRD:"&Status.SerialNumber(1,1)&".CP_ECF_Met30Min",64,-1,0,7,Day,0,0)
   
-  Average (1, AirT_2m,IEEE4,False)
-  Minimum (1, AirT_2m,IEEE4,False,False)
-  Maximum (1, AirT_2m,IEEE4,False,False)
-  StdDev (1, AirT_2m,IEEE4,False)
-  
-  Average (1, AirT_4m,IEEE4,False)
-  Minimum (1, AirT_4m,IEEE4,False,False)
-  Maximum (1, AirT_4m,IEEE4,False,False)
-  StdDev (1, AirT_4m,IEEE4,False)
-  
   Average (1, AirT_6m,IEEE4,False)
+  Average (1, AirT_4m,IEEE4,False)
+  Average (1, AirT_2m,IEEE4,False)
+  
   Minimum (1, AirT_6m,IEEE4,False,False)
+  Minimum (1, AirT_4m,IEEE4,False,False)
+  Minimum (1, AirT_2m,IEEE4,False,False)
+  
   Maximum (1, AirT_6m,IEEE4,False,False)
+  Maximum (1, AirT_4m,IEEE4,False,False)
+  Maximum (1, AirT_2m,IEEE4,False,False)
+  
   StdDev (1, AirT_6m,IEEE4,False)
+  StdDev (1, AirT_4m,IEEE4,False)
+  StdDev (1, AirT_2m,IEEE4,False)
   
   Sample  (1, RH_6m,IEEE4)
   Minimum (1, RH_6m,IEEE4,False,False)
   Maximum (1, RH_6m,IEEE4,False,False)
   StdDev (1, RH_6m,IEEE4,False)
-
+  
+  Sample  (1, WS_2m,IEEE4)
+  Minimum (1, WS_2m,IEEE4,False,False)
+  Maximum (1, WS_2m,IEEE4,False,False)
+  StdDev (1, WS_2m,IEEE4,False)
+  
+  Sample  (1, WD_2m,IEEE4)
+  
 	Average (1, SurfT,IEEE4,False)
 	Minimum (1, SurfT,IEEE4,False,False)
 	Maximum (1, SurfT,IEEE4,False,False)
@@ -244,26 +283,34 @@ DataTable (Met5Min,TRUE,-1)
 	CardOut (0,FLUX_SIZE_CRD)
  ' TableFile ("CRD:"&Status.SerialNumber(1,1)&".CP_ECF_Met30Min",64,-1,0,7,Day,0,0)
   
-  Average (1, AirT_2m,IEEE4,False)
-  Minimum (1, AirT_2m,IEEE4,False,False)
-  Maximum (1, AirT_2m,IEEE4,False,False)
-  StdDev (1, AirT_2m,IEEE4,False)
-  
-  Average (1, AirT_4m,IEEE4,False)
-  Minimum (1, AirT_4m,IEEE4,False,False)
-  Maximum (1, AirT_4m,IEEE4,False,False)
-  StdDev (1, AirT_4m,IEEE4,False)
-  
   Average (1, AirT_6m,IEEE4,False)
+  Average (1, AirT_4m,IEEE4,False)
+  Average (1, AirT_2m,IEEE4,False)
+  
   Minimum (1, AirT_6m,IEEE4,False,False)
+  Minimum (1, AirT_4m,IEEE4,False,False)
+  Minimum (1, AirT_2m,IEEE4,False,False)
+  
   Maximum (1, AirT_6m,IEEE4,False,False)
+  Maximum (1, AirT_4m,IEEE4,False,False)
+  Maximum (1, AirT_2m,IEEE4,False,False)
+  
   StdDev (1, AirT_6m,IEEE4,False)
+  StdDev (1, AirT_4m,IEEE4,False)
+  StdDev (1, AirT_2m,IEEE4,False)
   
   Sample  (1, RH_6m,IEEE4)
   Minimum (1, RH_6m,IEEE4,False,False)
   Maximum (1, RH_6m,IEEE4,False,False)
   StdDev (1, RH_6m,IEEE4,False)
-
+  
+  Sample  (1, WS_2m,IEEE4)
+  Minimum (1, WS_2m,IEEE4,False,False)
+  Maximum (1, WS_2m,IEEE4,False,False)
+  StdDev (1, WS_2m,IEEE4,False)
+  
+  Sample  (1, WD_2m,IEEE4)
+ 
 	Average (1, SurfT,IEEE4,False)
 	Minimum (1, SurfT,IEEE4,False,False)
 	Maximum (1, SurfT,IEEE4,False,False)
@@ -327,10 +374,30 @@ DataTable (Met30Min_raw,TRUE,-1)
   
 EndTable
 
+DataTable(CP_ECSF_7m_PRI,True,-1)
+	DataInterval(0,1,Min,10)
+  TableFile ("CRD:"&Status.SerialNumber(1,1)&".CP_ECSF_7m_PRI",64,-1,0,7,Day,0,0)
+  Median(1,PRI_7m,12,IEEE4,False)
+	Median(1,Down_532_7m,12,IEEE4,False)
+	Median(1,Down_570_7m,12,IEEE4,False)
+	Median(1,Up_532_7m,12,IEEE4,False)
+	Median(1,Up_570_7m,12,IEEE4,False)
+	Median(1,Ind_down_7m,12,IEEE4,False)
+	Median(1,Ind_up_7m,12,IEEE4,False)
+	Median(1,PRI_2m,12,IEEE4,False)
+	Median(1,Down_532_2m,12,IEEE4,False)
+	Median(1,Down_570_2m,12,IEEE4,False)
+	Median(1,Ind_down_2m,12,IEEE4,False)
+
+EndTable
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 'Program
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 BeginProg
+  
+  'Turn on SW12V permanently (need for constant power for sensors)
+  SW12 (1,1)
+  SW12 (2,1)  
   
 	SDMSpeed (SDM_PER)
   Scan (SCAN_INTERVAL,mSec,SCAN_BUFFER_SIZE,0)
@@ -344,12 +411,9 @@ BeginProg
   rho_v_LI7500 = rho_v_LI7500*18.0153*0.001
 
   'RM Young 05103 Wind Speed & Direction measurements
-	PulseCount(WS(1),1,1,1,1,0.098,0)
-	BrHalf(WD(1),1,mV5000,12,2,1,5000,True,0,250,355,0)
-	If WD(1) >= 360 OR WD(1) < 0 Then WD(1) = 0
-	PulseCount(WS(2),1,2,1,1,0.098,0)
-	BrHalf(WD(2),1,mV5000,21,2,1,5000,True,0,250,355,0)
-	If WD(2) >= 360 OR WD(2) < 0 Then WD(2) = 0
+	PulseCount(WS,1,1,1,1,0.098,0)
+	BrHalf(WD,1,mV5000,12,2,1,5000,True,0,250,355,0)
+	If WD >= 360 OR WD < 0 Then WD = 0
 
   'Output
   CallTable TimeSeriesData
@@ -362,6 +426,17 @@ SlowSequence
   'Measure CR3000 Diagnostics
   PanelTemp (T_CR3000,250)
   Battery (V_CR3000)
+
+	'Query sensor for 3 SDI-12 outputs.  Default address for all Decagon Digital sensors is 0.
+	SDI12Recorder (DownOut_7m(),3,0,"M!",1.0,0)
+	SDI12Recorder (UpOut_7m(),1,0,"M!",1.0,0)
+	'calculate NDVI from individual outputs of both sensors.  See equation 1 of the SRS manual
+	PRI_7m = ((Down_532_7m / Up_532_7m) - (Down_570_7m / Up_570_7m)) / ((Down_532_7m / Up_532_7m) + (Down_570_7m / Up_570_7m))
+
+	'Query sensor for 3 SDI-12 outputs.  Default address for all Decagon Digital sensors is 0.
+	SDI12Recorder (DownOut_2m(),5,0,"M!",1.0,0)
+	'calculate NDVI from individual outputs of both sensors.  See equation 1 of the SRS manual
+	PRI_2m = ((Down_532_2m / Up_532_7m) - (Down_570_2m / Up_570_7m)) / ((Down_532_2m / Up_532_7m) + (Down_570_2m / Up_570_7m))
 
 	'Measure CNR4
   VoltDiff (CNR4(),4,mV200,1,True ,0,250,1.0,0)
@@ -420,7 +495,8 @@ SlowSequence
 	CallTable Flux30Min
   CallTable Met30Min
   CallTable Met5Min
-  CallTable Met30Min_raw  
+  CallTable Met30Min_raw
+  CallTable CP_ECSF_7m_PRI  
 
 NextScan
 EndProg
