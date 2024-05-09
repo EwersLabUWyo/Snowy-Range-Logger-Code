@@ -1,6 +1,7 @@
 'Program: CP Eddy-Covariance (CPk_BBSF_7m)
 'Written by: John Frank, edited by Mario Bretfeld
 'Last edits:
+'2019-05-19 by Mario Bretfeld (changed fast reponse output name; added Pa to fast response output; changed WS_2m from sample to average, added median WS_2m)
 '2019-05-02 by Mario Bretfeld (added PRI sensors)
 '2019-04-24 by Mario Bretfeld (fixed WS and WD output, rearranged AirT output, fixed terminology of PAR sensors)
 '2019-02-25 by Mario Bretfeld (fixed NetRad calculation; added 5-min met data; fixed SDev Raw output of netrad) 
@@ -166,14 +167,14 @@ Units Down_570_2m = W/m^2 nm sr
 'Time Series Flux Data
 DataTable (TimeSeriesData,TRUE,-1)
 	DataInterval (0,SCAN_INTERVAL,mSec,100)
-  TableFile ("CRD:"&Status.SerialNumber(1,1)&".CP_ECF_10Hz",64,-1,0,1,Day,0,0)
+  TableFile ("CRD:"&Status.SerialNumber(1,1)&".CPk_BBSF7m_10Hz",64,-1,0,1,Day,0,0)
   Sample (1,Ux_CSAT3B,IEEE4)
 	Sample (1,Uy_CSAT3B,IEEE4)
 	Sample (1,Uz_CSAT3B,IEEE4)
 	Sample (1,Ts_CSAT3B,IEEE4)
 	Sample (1,rho_c_LI7500,IEEE4)
 	Sample (1,rho_v_LI7500,IEEE4)
-  Sample (1,DIAG_CSAT3B,IEEE4)
+  Sample (1,P_LI7500,IEEE4)
   Sample (1,DIAG_LI7500,IEEE4)
 EndTable
 
@@ -234,7 +235,8 @@ DataTable (Met30Min,TRUE,-1)
   Maximum (1, RH_6m,IEEE4,False,False)
   StdDev (1, RH_6m,IEEE4,False)
   
-  Sample  (1, WS_2m,IEEE4)
+  Average (1, WS_2m,IEEE4,False)
+  Median (1, WS_2m,360,IEEE4,False)
   Minimum (1, WS_2m,IEEE4,False,False)
   Maximum (1, WS_2m,IEEE4,False,False)
   StdDev (1, WS_2m,IEEE4,False)
@@ -304,7 +306,8 @@ DataTable (Met5Min,TRUE,-1)
   Maximum (1, RH_6m,IEEE4,False,False)
   StdDev (1, RH_6m,IEEE4,False)
   
-  Sample  (1, WS_2m,IEEE4)
+  Average (1, WS_2m,IEEE4,False)
+  Median (1, WS_2m,60,IEEE4,False)
   Minimum (1, WS_2m,IEEE4,False,False)
   Maximum (1, WS_2m,IEEE4,False,False)
   StdDev (1, WS_2m,IEEE4,False)
