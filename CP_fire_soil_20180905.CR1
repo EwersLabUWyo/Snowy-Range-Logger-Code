@@ -1,0 +1,307 @@
+'CR1000
+'Created by Short Cut (3.0)
+
+'Constants
+Const HFP_N = 12  'number of HFPs
+Const TB_01 = 1   'Tipping Bucket 1 mm/tip
+Const TB_02 = 1   'Tipping Bucket 2 mm/tip
+Const TB_03 = 1   'Tipping Bucket 3 mm/tip
+Const HFP_cal01 = 1000/64.11
+Const HFP_cal02 = 1000/60
+Const HFP_cal03 = 1000/60
+Const HFP_cal04 = 1000/60
+Const HFP_cal05 = 1000/60
+Const HFP_cal06 = 1000/60
+Const HFP_cal07 = 1000/60
+Const HFP_cal08 = 1000/60
+Const HFP_cal09 = 1000/60
+Const HFP_cal10 = 1000/60
+Const HFP_cal11 = 1000/60
+Const HFP_cal12 = 1000/60
+
+'Declare Variables and Units
+Dim LCount, ii, jj
+Dim mux_signal(16)                            'for mux measurements
+
+Public BattV : Units BattV = Volts
+Public PTemp_C : Units PTemp_C = Deg C
+Public RefT_C : Units RefT_C = Deg C
+Public Temp_C(24) : Units Temp_C = Deg C
+Public shf(HFP_N) : Units shf = W/m^2                'soil heat flux plates
+Public shf_mV(HFP_N) : Units shf_mV = mV             'soil heat flux plates raw
+Public Rain_mm : Units Rain_mm = mm
+Public Rain_mm_2 : Units Rain_mm_2 = mm
+Public Rain_mm_3 : Units Rain_mm_3 = mm
+
+Alias Temp_C(1) = SoilT_PitA_5
+Alias Temp_C(2) = SoilT_PitA_10
+Alias Temp_C(3) = SoilT_PitA_15
+Alias Temp_C(4) = SoilT_PitA_30
+Alias Temp_C(5) = SoilT_PitA_50
+Alias Temp_C(6) = SoilT_PitA_75
+
+Alias Temp_C(7) = SoilT_PitB_5
+Alias Temp_C(8) = SoilT_PitB_10
+Alias Temp_C(9) = SoilT_PitB_15
+Alias Temp_C(10) = SoilT_PitB_30
+Alias Temp_C(11) = SoilT_PitB_50
+Alias Temp_C(12) = SoilT_PitB_75
+
+Alias Temp_C(13) = SoilT_PitC_5
+Alias Temp_C(14) = SoilT_PitC_10
+Alias Temp_C(15) = SoilT_PitC_15
+Alias Temp_C(16) = SoilT_PitC_30
+Alias Temp_C(17) = SoilT_PitC_50
+Alias Temp_C(18) = SoilT_PitC_75
+
+Alias Temp_C(19) = SoilT_PitD_5
+Alias Temp_C(20) = SoilT_PitD_10
+Alias Temp_C(21) = SoilT_PitD_15
+Alias Temp_C(22) = SoilT_PitD_30
+Alias Temp_C(23) = SoilT_PitD_50
+Alias Temp_C(24) = SoilT_PitD_75
+
+Alias shf(1) = SoilHF_PitA_5
+Alias shf(2) = SoilHF_PitA_10
+Alias shf(3) = SoilHF_PitA_15
+
+Alias shf(4) = SoilHF_PitB_5
+Alias shf(5) = SoilHF_PitB_10
+Alias shf(6) = SoilHF_PitB_15
+
+Alias shf(7) = SoilHF_PitC_5
+Alias shf(8) = SoilHF_PitC_10
+Alias shf(9) = SoilHF_PitC_15
+
+Alias shf(10) = SoilHF_PitD_5
+Alias shf(11) = SoilHF_PitD_10
+Alias shf(12) = SoilHF_PitD_15
+
+'Define Data Tables
+DataTable(SoilData,True,-1)
+	DataInterval(0,30,Min,10)
+	Minimum(1,BattV,FP2,False,False)
+	
+	Average(1,RefT_C,FP2,False)
+	
+	Average(1,Temp_C(1),FP2,False)
+	Average(1,Temp_C(2),FP2,False)
+	Average(1,Temp_C(3),FP2,False)
+	Average(1,Temp_C(4),FP2,False)
+	Average(1,Temp_C(5),FP2,False)
+	Average(1,Temp_C(6),FP2,False)
+	Average(1,Temp_C(7),FP2,False)
+	Average(1,Temp_C(8),FP2,False)
+	Average(1,Temp_C(9),FP2,False)
+	Average(1,Temp_C(10),FP2,False)
+	Average(1,Temp_C(11),FP2,False)
+	Average(1,Temp_C(12),FP2,False)
+	Average(1,Temp_C(13),FP2,False)
+	Average(1,Temp_C(14),FP2,False)
+	Average(1,Temp_C(15),FP2,False)
+	Average(1,Temp_C(16),FP2,False)
+	Average(1,Temp_C(17),FP2,False)
+	Average(1,Temp_C(18),FP2,False)
+	Average(1,Temp_C(19),FP2,False)
+	Average(1,Temp_C(20),FP2,False)
+	Average(1,Temp_C(21),FP2,False)
+	Average(1,Temp_C(22),FP2,False)
+	Average(1,Temp_C(23),FP2,False)
+	Average(1,Temp_C(24),FP2,False)
+	
+	StdDev(1,Temp_C(1),FP2,False)
+	StdDev(1,Temp_C(2),FP2,False)
+	StdDev(1,Temp_C(3),FP2,False)
+	StdDev(1,Temp_C(4),FP2,False)
+	StdDev(1,Temp_C(5),FP2,False)
+	StdDev(1,Temp_C(6),FP2,False)
+	StdDev(1,Temp_C(7),FP2,False)
+	StdDev(1,Temp_C(8),FP2,False)
+	StdDev(1,Temp_C(9),FP2,False)
+	StdDev(1,Temp_C(10),FP2,False)
+	StdDev(1,Temp_C(11),FP2,False)
+	StdDev(1,Temp_C(12),FP2,False)
+	StdDev(1,Temp_C(13),FP2,False)
+	StdDev(1,Temp_C(14),FP2,False)
+	StdDev(1,Temp_C(15),FP2,False)
+	StdDev(1,Temp_C(16),FP2,False)
+	StdDev(1,Temp_C(17),FP2,False)
+	StdDev(1,Temp_C(18),FP2,False)
+	StdDev(1,Temp_C(19),FP2,False)
+	StdDev(1,Temp_C(20),FP2,False)
+	StdDev(1,Temp_C(21),FP2,False)
+	StdDev(1,Temp_C(22),FP2,False)
+	StdDev(1,Temp_C(23),FP2,False)
+	StdDev(1,Temp_C(24),FP2,False)
+	
+	Average(1,shf(1),FP2,False)
+	Average(1,shf(2),FP2,False)
+	Average(1,shf(3),FP2,False)
+	Average(1,shf(4),FP2,False)
+	Average(1,shf(5),FP2,False)
+	Average(1,shf(6),FP2,False)
+	Average(1,shf(7),FP2,False)
+	Average(1,shf(8),FP2,False)
+	Average(1,shf(9),FP2,False)
+	Average(1,shf(10),FP2,False)
+	Average(1,shf(11),FP2,False)
+	Average(1,shf(12),FP2,False)
+	
+	StdDev(1,shf(1),FP2,False)
+	StdDev(1,shf(2),FP2,False)
+	StdDev(1,shf(3),FP2,False)
+	StdDev(1,shf(4),FP2,False)
+	StdDev(1,shf(5),FP2,False)
+	StdDev(1,shf(6),FP2,False)
+	StdDev(1,shf(7),FP2,False)
+	StdDev(1,shf(8),FP2,False)
+	StdDev(1,shf(9),FP2,False)
+	StdDev(1,shf(10),FP2,False)
+	StdDev(1,shf(11),FP2,False)
+	StdDev(1,shf(12),FP2,False)
+EndTable
+
+DataTable(SoilData_raw,True,-1)
+	DataInterval(0,30,Min,10)
+	Minimum(1,BattV,FP2,False,False)
+	Average(1,shf_mV(1),FP2,False)
+	Average(1,shf_mV(2),FP2,False)
+	Average(1,shf_mV(3),FP2,False)
+	Average(1,shf_mV(4),FP2,False)
+	Average(1,shf_mV(5),FP2,False)
+	Average(1,shf_mV(6),FP2,False)
+	Average(1,shf_mV(7),FP2,False)
+	Average(1,shf_mV(8),FP2,False)
+	Average(1,shf_mV(9),FP2,False)
+	Average(1,shf_mV(10),FP2,False)
+	Average(1,shf_mV(11),FP2,False)
+	Average(1,shf_mV(12),FP2,False)
+	
+	StdDev(1,shf_mV(1),FP2,False)
+	StdDev(1,shf_mV(2),FP2,False)
+	StdDev(1,shf_mV(3),FP2,False)
+	StdDev(1,shf_mV(4),FP2,False)
+	StdDev(1,shf_mV(5),FP2,False)
+	StdDev(1,shf_mV(6),FP2,False)
+	StdDev(1,shf_mV(7),FP2,False)
+	StdDev(1,shf_mV(8),FP2,False)
+	StdDev(1,shf_mV(9),FP2,False)
+	StdDev(1,shf_mV(10),FP2,False)
+	StdDev(1,shf_mV(11),FP2,False)
+	StdDev(1,shf_mV(12),FP2,False)
+EndTable
+
+DataTable(MetData,True,-1)
+	DataInterval(0,30,Min,10)
+	Minimum(1,BattV,FP2,False,False)
+	Totalize(1,Rain_mm,FP2,False)
+	Totalize(1,Rain_mm_2,FP2,False)
+	Totalize(1,Rain_mm_3,FP2,False)
+EndTable
+
+'Main Program
+BeginProg
+	'Main Scan
+	Scan(30,Sec,1,0)
+	  
+		'Default Datalogger Battery Voltage measurement 'BattV'
+		Battery(BattV)
+		
+		'Default Wiring Panel Temperature measurement 'PTemp_C'
+		PanelTemp(PTemp_C,_60Hz)
+		
+		'107 Temperature Probe measurement 'RefT_C'
+		Therm107(RefT_C,1,1,1,0,_60Hz,1,0)
+		
+		'Turn AM16/32 Multiplexer On (SOIL TEMP)
+		PortSet(2,1)
+		Delay(0,150,mSec)
+		LCount=1
+		SubScan(0,uSec,24)
+			'Switch to next AM16/32 Multiplexer channel
+			PulsePort(1,10000)
+			'Type T (copper-constantan) Thermocouple measurements 'Temp_C()' on the AM16/32 Multiplexer
+			TCDiff(Temp_C(LCount),1,mV2_5C,2,TypeT,RefT_C,True,0,_60Hz,1,0)
+			LCount=LCount+1
+		NextSubScan
+		'Turn AM16/32 Multiplexer Off
+		PortSet(2,0)
+		Delay(0,150,mSec)
+		
+    'Turn AM16/32 Multiplexer On (SOIL HEAT FLUX)
+     ii = 0
+    PortSet (4,1)
+    SubScan (0,Sec,HFP_N)
+      ii += 1
+    'Clock the AM16/32A.
+    PulsePort (1,20000)
+     VoltDiff (mux_signal(ii),1,AutorangeC,3,True ,0,_60Hz,1.0,0)
+    NextSubScan
+    'Turn AM16/32 Multiplexer Off
+    PortSet (4,0)
+ 
+	  '*** Beginning of HFP01SC measurements ***
+    Move (shf_mV(1),HFP_N,mux_signal(1),HFP_N)
+
+    'Apply HFP01SC soil heat flux plate calibration.
+      shf(1) = shf_mV(1)*HFP_cal01
+      shf(2) = shf_mV(2)*HFP_cal02
+      shf(3) = shf_mV(3)*HFP_cal03
+      shf(4) = shf_mV(4)*HFP_cal04
+      shf(5) = shf_mV(5)*HFP_cal05
+      shf(6) = shf_mV(6)*HFP_cal06
+      shf(7) = shf_mV(7)*HFP_cal07
+      shf(8) = shf_mV(8)*HFP_cal08
+      shf(9) = shf_mV(9)*HFP_cal09
+      shf(10) = shf_mV(10)*HFP_cal10
+      shf(11) = shf_mV(11)*HFP_cal11
+      shf(12) = shf_mV(12)*HFP_cal12
+
+    'Power the HFP01SC heaters.
+'    PortSet (9,sw12_1_state)
+
+    'Get voltage across the heater (V_Rf).
+'    Move (V_Rf(1),2,mux_signal(9),2)
+
+'    For jj = 1 To 2
+'      V_Rf(jj) = V_Rf(jj)*0.001
+'    Next jj
+
+    'Begin HFP01SC calibration one minute into every CAL_INTERVAL minutes.
+'    If ( IfTime (1,CAL_INTERVAL,Min) ) Then
+'      shf_cal_on_f = TRUE
+'      Move (shf_mV_0(1),2,shf_mV(1),2)
+'      sw12_1_state = TRUE
+'    EndIf
+
+'    If ( IfTime (4,CAL_INTERVAL,Min) ) Then
+'      Move (shf_mV_180(1),2,shf_mV(1),2)
+'      Move (V_Rf_180(1),2,V_Rf(1),2)
+'      sw12_1_state = FALSE
+'    EndIf
+
+    'End HFP01SC calibration sequence.
+'    If ( IfTime (END_CAL,CAL_INTERVAL,Min) ) Then
+'      Move (shf_mV_end(1),2,shf_mV(1),2)
+      'Compute new HFP01SC calibration factors.
+'      For jj = 1 To 2
+'        shf_cal(jj) = V_Rf_180(jj)*V_Rf_180(jj)*128.7/ABS (((shf_mV_0(jj)+shf_mV_end(jj))/2)-shf_mV_180(jj))
+'      Next jj
+'      shf_cal_on_f = FALSE
+'    EndIf
+    '*** End of HFP01SC measurements ***	
+    		
+		'Generic Tipping Bucket Rain Gauge measurement 'Rain_mm'
+		PulseCount(Rain_mm,1,1,2,0,1,0)
+		'Generic Tipping Bucket Rain Gauge measurement 'Rain_mm_2'
+		PulseCount(Rain_mm_2,1,2,2,0,1,0)
+		'Generic Tipping Bucket Rain Gauge measurement 'Rain_mm_3'
+		PulseCount(Rain_mm_3,1,13,2,0,1,0)
+		
+		'Call Data Tables and Store Data
+		CallTable(SoilData)
+		CallTable(SoilData_raw)
+		CallTable(MetData)
+		
+	NextScan
+EndProg
