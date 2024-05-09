@@ -43,10 +43,12 @@
 '*** End of CNR1 wiring 
 
 '*** Beginning of LI190SB 
+' face upwards
 '7H      LI190SB #1 signal (red)
 '7L      LI190SB #1 signal reference (black)
 'gnd     LI190SB #1 shield (clear)
 
+' face downwards
 '8H      LI190SB #2 signal (red)
 '8L      LI190SB #2 signal reference (black)
 'gnd     LI190SB #2 shield (clear)
@@ -119,8 +121,8 @@ Dim CNR1_raw(5) 'raw data
 
 'LI-190SB PAR
 Public PAR(2) : Units PAR = umol/s/m^2
-Alias PAR(1) = PAR_up                        'flux density for LI190SB facing down (measuring upwards PAR)
-Alias PAR(2) = PAR_dn                        'flux density for LI190SB facing up (measuring downwards PAR)
+Alias PAR(1) = PAR_up                        'flux density for LI190SB facing up (measuring downwards PAR)
+Alias PAR(2) = PAR_dn                        'flux density for LI190SB facing down (measuring upwards PAR)
 Dim PAR_raw(2) 'raw data 
 
 'HMP & RTD for RH/AirT
