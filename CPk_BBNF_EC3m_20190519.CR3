@@ -1,6 +1,8 @@
 'Program: CP Eddy-Covariance (CPk_BBNF_3m)
 'Written by: John Frank, edited by Mario Bretfeld
 'Last edits:
+'2022-05-27 by Alex Fox UNDEPLOYED re-fixed netrad to now use kelvin, undoing 20190225 edit
+'2019-05-19 by Mario Bretfeld (fixed fast responsen output name; replaced CSAT diag with Pa in fast response output)
 '2019-04-04 edited for BBNF_3m, based on BBSF_7m
 '2019-02-25 by Mario Bretfeld (fixed NetRad calculation; added 5-min met data; fixed SDev Raw output of netrad) 
 '2018-11-19 by Sasha Ivans (fix data storage issue)
@@ -61,7 +63,7 @@ Const pyrano_lower = 6.58      'Unique down pyranometer sensitivity from CNR1 ca
 Const pyrgeo_upper = 7.40      'Unique up pyrgeometer sensitivity from CNR1 cal sheet SN# 80246
 Const pyrgeo_lower = 7.08      'Unique down pyrgeometer sensitviity from CNR1 cal sheet SN# 80246
 
-Const LI190_Cal_1 = 6.6     'Unique calibration factor for LI190SB #1 calibration sheet SN# QT7919
+Const LI190_Cal_1 = 6.6     'Unique calibration factor for LI190SB #1 calibration sheet SN# Q27919
 'Const LI190_Cal_2 = 6.65     'Unique calibration factor for LI190SB #2 calibration sheet
 
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -124,14 +126,14 @@ Public TTmV : Units TTmV = mV                    'SI111 Target raw
 'Time Series Flux Data
 DataTable (TimeSeriesData,TRUE,-1)
 	DataInterval (0,SCAN_INTERVAL,mSec,100)
-  TableFile ("CRD:"&Status.SerialNumber(1,1)&".CP_EC_BBSF3m_10Hz",64,-1,0,1,Day,0,0)
+  TableFile ("CRD:"&Status.SerialNumber(1,1)&".CP_EC_BBNF3m_10Hz",64,-1,0,1,Day,0,0)
   Sample (1,Ux_CSAT3B,IEEE4)
 	Sample (1,Uy_CSAT3B,IEEE4)
 	Sample (1,Uz_CSAT3B,IEEE4)
 	Sample (1,Ts_CSAT3B,IEEE4)
 	Sample (1,rho_c_LI7500,IEEE4)
 	Sample (1,rho_v_LI7500,IEEE4)
-  Sample (1,DIAG_CSAT3B,IEEE4)
+  Sample (1,P_LI7500,IEEE4) 
   Sample (1,DIAG_LI7500,IEEE4)
 EndTable
 
@@ -326,8 +328,8 @@ SlowSequence
   PRT(Tb,1,CNR1(5),1,0)
   SWD = CNR1(1)/pyrano_upper*1000 'calculate short wave down 
   SWU = CNR1(2)/pyrano_lower*1000 'calculate short wave up
-  LWD_cor = CNR1(3)/pyrgeo_upper*1000 + 5.67e-8*(Tb)^4 'calculate temp corrected long wave down
-  LWU_cor = CNR1(4)/pyrgeo_lower*1000 + 5.67e-8*(Tb)^4 'calculate temp corrected long wave up
+  LWD_cor = CNR1(3)/pyrgeo_upper*1000 + 5.67e-8*(Tb + 273.15)^4 'calculate temp corrected long wave down
+  LWU_cor = CNR1(4)/pyrgeo_lower*1000 + 5.67e-8*(Tb + 273.15)^4 'calculate temp corrected long wave up
   Rn = SWD - SWU + LWD_cor - LWU_cor
   albedo = SWU/SWD
   
