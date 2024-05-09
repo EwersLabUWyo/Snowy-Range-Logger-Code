@@ -1,7 +1,7 @@
 'Program: CP Eddy-Covariance (CPk_BBNF_3m)
-'Written by: John Frank, edited by Mario Bretfeld
+'Written by: John Frank, edited by Mario Bretfeld and Alex Fox
 'Last edits:
-'2022-05-27 by Alex Fox UNDEPLOYED re-fixed netrad to now use kelvin, undoing 20190225 edit
+'2023-09-22 by Alex Fox (updated SI111 coefficients, fixed LW computation)
 '2019-05-19 by Mario Bretfeld (fixed fast responsen output name; replaced CSAT diag with Pa in fast response output)
 '2019-04-04 edited for BBNF_3m, based on BBSF_7m
 '2019-02-25 by Mario Bretfeld (fixed NetRad calculation; added 5-min met data; fixed SDev Raw output of netrad) 
@@ -51,12 +51,12 @@ Const FLUX_SIZE_CPU = Ceiling ((NUM_DAY_CPU*1440)/OUTPUT_INTERVAL) 'Size of flux
 Const FLUX_SIZE_CRD = Ceiling ((NUM_DAY_CRD*1440)/OUTPUT_INTERVAL) 'Size of flux data table on CRD [days].
 Const SDM_PER = 30         'Unique value, default SDM clock speed.
 
-Const const_M1 = 1359900000  'Unique IR sensor SN# 5063
-Const const_M2 = 7051720     'Unique IR sensor SN# 5063
-Const const_M3 = 66181.2     'Unique IR sensor SN# 5063
-Const const_B1 = -6850510    'Unique IR sensor SN# 5063
-Const const_B2 = 211410      'Unique IR sensor SN# 5063
-Const const_B3 = 3494.79     'Unique IR sensor SN# 5063
+Const const_M1 = 1339620000   'Unique IR sensor SN# 5063
+Const const_M2 = 7203760      'Unique IR sensor SN# 5063
+Const const_M3 = 78488.2      'Unique IR sensor SN# 5063
+Const const_B1 = -10420000    'Unique IR sensor SN# 5063
+Const const_B2 = 123971       'Unique IR sensor SN# 5063
+Const const_B3 = 3173.57      'Unique IR sensor SN# 5063
 
 Const pyrano_upper = 6.75      'Unique up pyranometer sensitivity from CNR1 cal sheet SN# 80246
 Const pyrano_lower = 6.58      'Unique down pyranometer sensitivity from CNR1 cal sheet SN# 80246
