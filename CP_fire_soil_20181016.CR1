@@ -3,21 +3,21 @@
 
 'Constants
 Const HFP_N = 12  'number of HFPs
-Const TB_01 = 1   'Tipping Bucket 1 mm/tip
+Const TB_01 = 0.116   'Tipping Bucket 1 mm/tip
 Const TB_02 = 1   'Tipping Bucket 2 mm/tip
 Const TB_03 = 1   'Tipping Bucket 3 mm/tip
-Const HFP_cal01 = 1000/64.11
-Const HFP_cal02 = 1000/60
-Const HFP_cal03 = 1000/60
-Const HFP_cal04 = 1000/60
-Const HFP_cal05 = 1000/60
-Const HFP_cal06 = 1000/60
-Const HFP_cal07 = 1000/60
-Const HFP_cal08 = 1000/60
-Const HFP_cal09 = 1000/60
-Const HFP_cal10 = 1000/60
-Const HFP_cal11 = 1000/60
-Const HFP_cal12 = 1000/60
+Const HFP_cal01 = 1000/63.68
+Const HFP_cal02 = 1000/67.0
+Const HFP_cal03 = 1000/62.2
+Const HFP_cal04 = 1000/63.33
+Const HFP_cal05 = 1000/60.7
+Const HFP_cal06 = 1000/60.8
+Const HFP_cal07 = 1000/64.11
+Const HFP_cal08 = 1000/63.68
+Const HFP_cal09 = 1000/64.1
+Const HFP_cal10 = 1000/62.66
+Const HFP_cal11 = 1000/64.65
+Const HFP_cal12 = 1000/63.47
 
 'Declare Variables and Units
 Dim LCount, ii, jj
