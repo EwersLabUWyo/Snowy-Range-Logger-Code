@@ -89,7 +89,7 @@ BeginProg
  
 
 SlowSequence
- Scan (5,Min,3,0)
+ Scan (5,Sec,3,0)
    
   'Measure CR6 Diagnostics
   PanelTemp (PTemp_C,60)
