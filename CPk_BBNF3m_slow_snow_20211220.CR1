@@ -66,7 +66,7 @@ DataTable(Snowpack,True,-1)
 	'Memory Drive the moment it is plugged into the CS I/O port of the datalogger.
 	'This mode of operation is referred to as Data Collection Mode (see the SC115 manual).
 	'This TableFile instruction has no effect if an SC115 is never plugged into the datalogger.
-	TableFile("USB:"+Status.SerialNumber+"Data",8,-1,0,0,Hr,0,0)
+	TableFile("USB:"+Status.SerialNumber+"Snowdepth_BBNF",8,-1,0,0,Hr,0,0)
 	
   'snow pinger variables
 	Average(1,DistTo,FP2,False)
