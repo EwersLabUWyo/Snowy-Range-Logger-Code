@@ -2,6 +2,7 @@
 'Created by Short Cut (3.2)
 'Chimney Park Sap Flow BBNF
 'written/edited by Dan Beverly and Mario Bretfeld
+' 2019-05-02 by Mario Bretfeld (edited PRI output)
 
 'Declare Variables and Units
 Dim LCount
@@ -54,7 +55,7 @@ Units Down_570_2m = W/m^2 nm sr
 
 'Define Data Tables
 DataTable(BBNF_SapFlow,True,-1)
-	DataInterval(0,2,Min,10)
+	DataInterval(0,30,Min,10)
 	TableFile ("USB:BBNF_SapFlow",8,-1,0,0,Min,0,0)      '******Code for USB download
 	Minimum(1,BattV,FP2,False,False)
 	Average(1,PTemp_C,IEEE4,False)
@@ -80,6 +81,7 @@ EndTable
 
 DataTable(PRI_BBNF_2m,True,-1)
 	DataInterval(0,1,Min,10)
+	TableFile ("USB:PRI_BBNF_2m",8,-1,0,0,Min,0,0)      '******Code for USB download
   Median(1,PRI_2m,12,IEEE4,False)
 	Median(1,Down_532_2m,12,IEEE4,False)
 	Median(1,Down_570_2m,12,IEEE4,False)
@@ -101,7 +103,7 @@ BeginProg
 		PRI_2m = ((Down_532_2m / Up_532_2m) - (Down_570_2m / Up_570_2m)) / ((Down_532_2m / Up_532_2m) + (Down_570_2m / Up_570_2m))
 		
 		'Call Data Tables and Store Data
-		CallTable PRI_BBNF_2m
+'		CallTable PRI_BBNF_2m
 			  
   NextScan
  
@@ -134,6 +136,7 @@ BeginProg
 
 		'Call Data Tables and Store Data
 		CallTable BBNF_SapFlow
+    CallTable PRI_BBNF_2m
 		
 	  NextScan
 	  
