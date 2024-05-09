@@ -1,0 +1,106 @@
+'Code for 3.5m EC system in CPl_BB-SF
+'Author: Mario Bretfeld
+'Last Edit: 2018-11-19
+'Edit History: added card out (Nov. 19 2018)
+
+'*** Station constants.
+'Start of Constants Customization Section
+
+Const SCAN_INTERVAL = 100  'Unique value, measurement rate 100 ms (10 Hz) or 50 ms (20 Hz).
+Const OUTPUT_INTERVAL = 30 'Unique value, online flux data output interval in minutes.
+Const SCAN_BUFFER_SIZE = 60*INT (1000/SCAN_INTERVAL)     'Compute a 60 second scan buffer.
+Const NUM_DAY_CRD = 44    'Unique value, number of days of flux data to store on a 16 GB CF card (44 days = 2 GB). This value will vary with configuration.
+Const NUM_DAY_CPU = 1                                              'Number of days of flux data to store on the CPU.
+Const FLUX_SIZE_CPU = Ceiling ((NUM_DAY_CPU*1440)/OUTPUT_INTERVAL) 'Size of flux data table on CPU [days].
+Const FLUX_SIZE_CRD = Ceiling ((NUM_DAY_CRD*1440)/OUTPUT_INTERVAL) 'Size of flux data table on CRD [days].
+Const SDM_PER = 30         'Unique value, default SDM clock speed.
+
+Const snow_height_m = 3.2  'height of snow depth sensor
+
+Public BattV
+Public PTemp_C
+Public SR50A(2)
+Public TCDT
+Public DBTCDT
+Public sonic_irga(12)
+
+Alias SR50A(1) = DT
+Alias SR50A(2) = Q
+Alias sonic_irga(1) = Ux
+Alias sonic_irga(2) = Uy
+Alias sonic_irga(3) = Uz
+Alias sonic_irga(4) = Ts
+Alias sonic_irga(5) = diag_sonic
+Alias sonic_irga(6) = CO2
+Alias sonic_irga(7) = H2O
+Alias sonic_irga(8) = diag_irga
+Alias sonic_irga(9) = cell_tmpr
+Alias sonic_irga(10) = cell_press
+Alias sonic_irga(11) = CO2_sig_strgth
+Alias sonic_irga(12) = H2O_sig_strgth
+
+Units BattV = V
+Units PTemp_C = C
+Units Ux = m/s
+Units Uy = m/s
+Units Uz = m/s
+Units Ts = C
+Units diag_sonic = arb
+Units CO2 = mg/m^3
+Units H2O = g/m^3
+Units diag_irga = arb
+Units cell_tmpr = C
+Units cell_press = kPa
+Units CO2_sig_strgth = arb
+Units H2O_sig_strgth = arb
+
+DataTable (TimeSeriesData,TRUE,-1)
+ DataInterval (0,100,mSec,10)
+ TableFile ("CRD:"&Status.SerialNumber(1,1)&".CPk_BBSF4m_10Hz",64,-1,0,1,Day,0,0)
+ Sample (12,Ux,IEEE4)
+EndTable
+
+DataTable (Flux30Min,TRUE,-1)
+	DataInterval (0,OUTPUT_INTERVAL,Min,100)
+	CardOut (0,FLUX_SIZE_CRD)
+		
+	Average (12,Ux,IEEE4,0)
+	StdDev (12,Ux,IEEE4,0)	
+	Average(1,BattV,IEEE4,0)
+	Minimum(1,BattV,IEEE4,0,False)
+	Average(1,PTemp_C,IEEE4,False)
+	Average(1,DT,IEEE4,False)
+	StdDev(1,DT,IEEE4,False)
+	Average(1,Q,IEEE4,False)
+	StdDev(1,Q,IEEE4,False)
+	Average(1,TCDT,IEEE4,False)
+	StdDev(1,TCDT,IEEE4,False)
+	Average(1,DBTCDT,IEEE4,False)
+	StdDev(1,DBTCDT,IEEE4,False)
+EndTable
+
+BeginProg
+  SDMSpeed (SDM_PER)
+  Scan (SCAN_INTERVAL,mSec,SCAN_BUFFER_SIZE,0)
+
+  EC100 (Ux,1,1)
+  CallTable TimeSeriesData
+ NextScan
+ 
+
+SlowSequence
+ Scan (5,Min,3,0)
+   
+  'Measure CR6 Diagnostics
+  PanelTemp (PTemp_C,60)
+  Battery (BattV)
+	'SR50A Sonic Ranging Sensor (SDI-12 Output) measurements 'DT' and 'Q' and calculations 'TCDT' and 'DBTCDT'
+	SDI12Recorder(SR50A(),U1,"0","M1!",1,0,-1)
+	TCDT = DT*SQR((cell_tmpr + 273.15)/273.15)
+	DBTCDT = snow_height_m - TCDT  
+	
+  'Output
+  CallTable Flux30Min  
+  
+ NextScan
+EndProg
