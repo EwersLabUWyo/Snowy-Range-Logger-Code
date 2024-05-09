@@ -1,7 +1,8 @@
 'Code for 3.5m EC system in CPl_BB-SF
 'Author: Mario Bretfeld
-'Last Edit: 2018-11-19
-'Edit History: added card out (Nov. 19 2018)
+'Edit History: 
+' 2019-02-21 changed main scan interval from 5 min to 5 sec
+' 2018-11-19 added card out 
 
 '*** Station constants.
 'Start of Constants Customization Section
