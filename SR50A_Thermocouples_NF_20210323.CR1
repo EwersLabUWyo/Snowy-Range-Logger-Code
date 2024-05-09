@@ -1,0 +1,177 @@
+'CR1000
+'Created by Short Cut (4.0)
+
+'Declare Variables and Units
+Dim LCount
+Dim LCount_2
+Public BattV
+Public PTemp_C
+Public SR50A(2)
+Public TCDT
+Public DBTCDT
+Public TA_Ref
+Public Pack_C_Pole_A(15)
+Public Pack_C_Pole_B(15)
+Public IRGA_Temp_C(4)
+
+Alias SR50A(1)=DT
+Alias SR50A(2)=Q
+
+Units BattV=Volts
+Units PTemp_C=Deg C
+Units TA_Ref=Deg C
+Units Pack_C_Pole_A=Deg C
+Units Pack_C_Pole_B=Deg C
+Units IRGA_Temp_C=Deg C
+
+'Define Data Tables
+DataTable(Snow,True,-1)
+	DataInterval(0,30,Min,10)
+	'The following TableFile instruction causes new data to be copied to an optional SC115 Flash
+	'Memory Drive the moment it is plugged into the CS I/O port of the datalogger.
+	'This mode of operation is referred to as Data Collection Mode (see the SC115 manual).
+	'This TableFile instruction has no effect if an SC115 is never plugged into the datalogger.
+	TableFile("USB:"+Status.SerialNumber+"Snow",8,-1,0,0,Hr,0,0)
+	Average(1,DT,FP2,False)
+	Average(1,Q,FP2,False)
+	Average(1,TCDT,FP2,False)
+	Average(1,DBTCDT,FP2,False)
+	Average(1,TA_Ref,FP2,False)
+	StdDev(1,DT,FP2,False)
+	StdDev(1,Q,FP2,False)
+	StdDev(1,TCDT,FP2,False)
+	StdDev(1,DBTCDT,FP2,False)
+	StdDev(1,TA_Ref,FP2,False)
+	Average(1,Pack_C_Pole_A(1),FP2,False)
+	Average(1,Pack_C_Pole_A(2),FP2,False)
+	Average(1,Pack_C_Pole_A(3),FP2,False)
+	Average(1,Pack_C_Pole_A(4),FP2,False)
+	Average(1,Pack_C_Pole_A(5),FP2,False)
+	Average(1,Pack_C_Pole_A(6),FP2,False)
+	Average(1,Pack_C_Pole_A(7),FP2,False)
+	Average(1,Pack_C_Pole_A(8),FP2,False)
+	Average(1,Pack_C_Pole_A(9),FP2,False)
+	Average(1,Pack_C_Pole_A(10),FP2,False)
+	Average(1,Pack_C_Pole_A(11),FP2,False)
+	Average(1,Pack_C_Pole_A(12),FP2,False)
+	Average(1,Pack_C_Pole_A(13),FP2,False)
+	Average(1,Pack_C_Pole_A(14),FP2,False)
+	Average(1,Pack_C_Pole_A(15),FP2,False)
+	Average(1,Pack_C_Pole_B(1),FP2,False)
+	Average(1,Pack_C_Pole_B(2),FP2,False)
+	Average(1,Pack_C_Pole_B(3),FP2,False)
+	Average(1,Pack_C_Pole_B(4),FP2,False)
+	Average(1,Pack_C_Pole_B(5),FP2,False)
+	Average(1,Pack_C_Pole_B(6),FP2,False)
+	Average(1,Pack_C_Pole_B(7),FP2,False)
+	Average(1,Pack_C_Pole_B(8),FP2,False)
+	Average(1,Pack_C_Pole_B(9),FP2,False)
+	Average(1,Pack_C_Pole_B(10),FP2,False)
+	Average(1,Pack_C_Pole_B(11),FP2,False)
+	Average(1,Pack_C_Pole_B(12),FP2,False)
+	Average(1,Pack_C_Pole_B(13),FP2,False)
+	Average(1,Pack_C_Pole_B(14),FP2,False)
+	Average(1,Pack_C_Pole_B(15),FP2,False)
+	StdDev(1,Pack_C_Pole_A(1),FP2,False)
+	StdDev(1,Pack_C_Pole_A(2),FP2,False)
+	StdDev(1,Pack_C_Pole_A(3),FP2,False)
+	StdDev(1,Pack_C_Pole_A(4),FP2,False)
+	StdDev(1,Pack_C_Pole_A(5),FP2,False)
+	StdDev(1,Pack_C_Pole_A(6),FP2,False)
+	StdDev(1,Pack_C_Pole_A(7),FP2,False)
+	StdDev(1,Pack_C_Pole_A(8),FP2,False)
+	StdDev(1,Pack_C_Pole_A(9),FP2,False)
+	StdDev(1,Pack_C_Pole_A(10),FP2,False)
+	StdDev(1,Pack_C_Pole_A(11),FP2,False)
+	StdDev(1,Pack_C_Pole_A(12),FP2,False)
+	StdDev(1,Pack_C_Pole_A(13),FP2,False)
+	StdDev(1,Pack_C_Pole_A(14),FP2,False)
+	StdDev(1,Pack_C_Pole_A(15),FP2,False)
+	StdDev(1,Pack_C_Pole_B(1),FP2,False)
+	StdDev(1,Pack_C_Pole_B(2),FP2,False)
+	StdDev(1,Pack_C_Pole_B(3),FP2,False)
+	StdDev(1,Pack_C_Pole_B(4),FP2,False)
+	StdDev(1,Pack_C_Pole_B(5),FP2,False)
+	StdDev(1,Pack_C_Pole_B(6),FP2,False)
+	StdDev(1,Pack_C_Pole_B(7),FP2,False)
+	StdDev(1,Pack_C_Pole_B(8),FP2,False)
+	StdDev(1,Pack_C_Pole_B(9),FP2,False)
+	StdDev(1,Pack_C_Pole_B(10),FP2,False)
+	StdDev(1,Pack_C_Pole_B(11),FP2,False)
+	StdDev(1,Pack_C_Pole_B(12),FP2,False)
+	StdDev(1,Pack_C_Pole_B(13),FP2,False)
+	StdDev(1,Pack_C_Pole_B(14),FP2,False)
+	StdDev(1,Pack_C_Pole_B(15),FP2,False)
+EndTable
+
+DataTable(Table_2,True,-1)
+	DataInterval(0,30,Min,10)
+	'The following TableFile instruction causes new data to be copied to an optional SC115 Flash
+	'Memory Drive the moment it is plugged into the CS I/O port of the datalogger.
+	'This mode of operation is referred to as Data Collection Mode (see the SC115 manual).
+	'This TableFile instruction has no effect if an SC115 is never plugged into the datalogger.
+	TableFile("USB:"+Status.SerialNumber+"Table_2",8,-1,0,0,Hr,0,0)
+	Minimum(1,BattV,FP2,False,False)
+	Average(1,PTemp_C,FP2,False)
+	Maximum(1,PTemp_C,FP2,False,False)
+	Minimum(1,PTemp_C,FP2,False,False)
+	StdDev(1,PTemp_C,FP2,False)
+EndTable
+
+DataTable(IRGA,True,-1)
+	DataInterval(0,1,Min,10)
+	'The following TableFile instruction causes new data to be copied to an optional SC115 Flash
+	'Memory Drive the moment it is plugged into the CS I/O port of the datalogger.
+	'This mode of operation is referred to as Data Collection Mode (see the SC115 manual).
+	'This TableFile instruction has no effect if an SC115 is never plugged into the datalogger.
+	TableFile("USB:"+Status.SerialNumber+"IRGA",8,-1,0,0,Hr,0,0)
+	Average(1,IRGA_Temp_C(1),FP2,False)
+	Average(1,IRGA_Temp_C(2),FP2,False)
+	Average(1,IRGA_Temp_C(3),FP2,False)
+	Average(1,IRGA_Temp_C(4),FP2,False)
+EndTable
+
+'Main Program
+BeginProg
+	'Main Scan
+	Scan(60,Sec,1,0)
+		'Default CR1000 Datalogger Battery Voltage measurement 'BattV'
+		Battery(BattV)
+		'Default CR1000 Datalogger Wiring Panel Temperature measurement 'PTemp_C'
+		PanelTemp(PTemp_C,_60Hz)
+		'SR50A Sonic Ranging Sensor (SDI-12 Output) measurements 'DT' and 'Q' and calculations 'TCDT' and 'DBTCDT'
+		SDI12Recorder(SR50A(),1,"1","M1!",1,0,-1)
+		TCDT=DT*SQR((TA_Ref+273.15)/273.15)
+		DBTCDT=2-TCDT
+		'Type T Thermocouple measurements 'TA_Ref'
+		TCDiff(TA_Ref,1,mV2_5C,1,TypeT,PTemp_C,True,0,_60Hz,1,0)
+		'Turn AM16/32 Multiplexer On
+		PortSet(3,1)
+		Delay(0,150,mSec)
+		LCount=1
+		SubScan(0,uSec,15)
+			'Switch to next AM16/32 Multiplexer channel
+			PulsePort(2,10000)
+			'Type T Thermocouple measurements 'Pack_C_Pole_A()' on the AM16/32 Multiplexer
+			TCDiff(Pack_C_Pole_A(LCount),1,mV2_5C,2,TypeT,PTemp_C,True,0,_60Hz,1,0)
+			LCount=LCount+1
+		NextSubScan
+		LCount_2=1
+		SubScan(0,uSec,15)
+			'Switch to next AM16/32 Multiplexer channel
+			PulsePort(2,10000)
+			'Type T Thermocouple measurements 'Pack_C_Pole_B()' on the AM16/32 Multiplexer
+			TCDiff(Pack_C_Pole_B(LCount_2),1,mV2_5C,2,TypeT,PTemp_C,True,0,_60Hz,1,0)
+			LCount_2=LCount_2+1
+		NextSubScan
+		'Turn AM16/32 Multiplexer Off
+		PortSet(3,0)
+		Delay(0,150,mSec)
+		'Type T Thermocouple measurements 'IRGA_Temp_C()'
+		TCDiff(IRGA_Temp_C(),4,mV2_5C,3,TypeT,PTemp_C,True,0,_60Hz,1,0)
+		'Call Data Tables and Store Data
+		CallTable Snow
+		CallTable Table_2
+		CallTable IRGA
+	NextScan
+EndProg
