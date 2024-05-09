@@ -1,3 +1,5 @@
+'Latest Edits
+'2019-06-26 by Mario Bretfeld (changed TableFile command to not DL all data each time SC115 is inserted)
 'CR1000
 'Created by Short Cut (3.0)
 
@@ -81,7 +83,7 @@ Alias shf(12) = SoilHF_PitD_15
 'Define Data Tables
 DataTable(SoilData_BBSF,True,-1)
 	DataInterval(0,30,Min,10)
-	TableFile("USB:"+Status.SerialNumber+"SoilData_BBSF",8,-2,0,-1,Day,0,0)      '******Code for SC115 USB
+	TableFile("USB:"+Status.SerialNumber+"SoilData_BBSF",8,-1,0,0,Day,0,0)      '******Code for SC115 USB
 	Minimum(1,BattV,FP2,False,False)
   Average(1,RefT_C,FP2,False)
 	Average(1,Temp_C(1),FP2,False)
@@ -163,7 +165,7 @@ EndTable
 
 DataTable(SoilData_raw_BBSF,True,-1)
 	DataInterval(0,30,Min,10)
-	TableFile("USB:"+Status.SerialNumber+"SoilData_raw_BBSF",8,-2,0,-1,Day,0,0)      '******Code for SC115 USB
+	TableFile("USB:"+Status.SerialNumber+"SoilData_raw_BBSF",8,-1,0,0,Day,0,0)      '******Code for SC115 USB
 	
 	Minimum(1,BattV,FP2,False,False)
 	Average(1,shf_mV(1),FP2,False)
@@ -195,7 +197,7 @@ EndTable
 
 DataTable(MetData_BBSF,True,-1)
 	DataInterval(0,30,Min,10)
-	TableFile("USB:"+Status.SerialNumber+"MetData_BBSF",8,-2,0,-1,Day,0,0)      '******Code for SC115 USB
+	TableFile("USB:"+Status.SerialNumber+"MetData_BBSF",8,-1,0,0,Day,0,0)      '******Code for SC115 USB
 	
 	Minimum(1,BattV,FP2,False,False)
 	Totalize(1,Rain_mm,FP2,False)
