@@ -201,18 +201,19 @@ Public x(12)
 Public MEAS, HEAT, v_in, i, j
 
 'Define Data Tables.
-DataTable (TC_30Min,1,-1) 'Set table size to # of records, or -1 to autoallocate.
+'DataTable (TC_30Min,1,-1) 'Set table size to # of records, or -1 to autoallocate.
+'	DataInterval (0,1,Sec,1)
 '	CardOut (0,-1)
-	DataInterval (0,1,Sec,1)
-  TableFile ("CRD:"&Status.SerialNumber(1,1)&".TC_30Min_NF_",64,-1,0,28,Day,0,0)
-	Sample (12,TC_T(),IEEE4)
-	Sample (12,TC_V(),IEEE4)
-	Sample (2,DIAG_CR3000(1),IEEE4)
-EndTable  
+'  TableFile ("USB:"&Status.SerialNumber(1,1)&".TC_30Min_NF_",0,-1,0,28,Day,0,0)
+'	Sample (12,TC_T(),IEEE4)
+'	Sample (12,TC_V(),IEEE4)
+'	Sample (2,DIAG_CR3000(1),IEEE4)
+'EndTable  
 
 DataTable (GsTs_5Min,TRUE,-1)
   DataInterval (0,5,Min,100)
-  TableFile ("CRD:"&Status.SerialNumber(1,1)&".GsTs_5Min_NF_",64,-1,0,28,Day,0,0)
+	CardOut (0,-1)
+  TableFile ("USB:"&Status.SerialNumber(1,1)&".GsTs_5Min_NF_",0,-1,0,28,Day,0,0)
   Average (7,Gs,IEEE4,False)
   Average (5,Ts,IEEE4,False)
   Average (2,DIAG_CR3000(1),IEEE4,False)
@@ -223,7 +224,8 @@ EndTable
 
 DataTable (GsTs_30Min,TRUE,-1)
   DataInterval (0,30,Min,100)
-  TableFile ("CRD:"&Status.SerialNumber(1,1)&".GsTs_30Min_NF_",64,-1,0,28,Day,0,0)
+	CardOut (0,-1)
+  TableFile ("USB:"&Status.SerialNumber(1,1)&".GsTs_30Min_NF_",0,-1,0,28,Day,0,0)
   Average (7,Gs,IEEE4,False)
   Average (5,Ts,IEEE4,False)
   Average (2,DIAG_CR3000(1),IEEE4,False)
@@ -234,7 +236,8 @@ EndTable
 
 DataTable (HydraProbe_5Min,TRUE,-1)
   DataInterval (0,5,Min,100)
-  TableFile ("CRD:"&Status.SerialNumber(1,1)&".NRCS_zsStevens_5Min_NF_",64,-1,0,28,Day,0,0)
+	CardOut (0,-1)
+  TableFile ("USB:"&Status.SerialNumber(1,1)&".NRCS_zsStevens_5Min_NF_",0,-1,0,28,Day,0,0)
   Sample (1,Soil_Moist_A5cm,IEEE4)
   Sample (1,Soil_Moist_A10cm,IEEE4)
   Sample (1,Soil_Moist_A15cm,IEEE4)
@@ -330,7 +333,8 @@ EndTable
 
 DataTable (HydraProbe_30Min,TRUE,-1)
   DataInterval (0,30,Min,100)
-  TableFile ("CRD:"&Status.SerialNumber(1,1)&".NRCS_zsStevens_30Min_NF_",64,-1,0,28,Day,0,0)
+	CardOut (0,-1)
+  TableFile ("USB:"&Status.SerialNumber(1,1)&".NRCS_zsStevens_30Min_NF_",0,-1,0,28,Day,0,0)
   Average (1,Soil_Moist_A5cm,IEEE4,False)
   Average (1,Soil_Moist_A10cm,IEEE4,False)
   Average (1,Soil_Moist_A15cm,IEEE4,False)
@@ -517,7 +521,8 @@ EndTable
 
 DataTable (CS616_5Min,TRUE,-1)
   DataInterval (0,5,Min,100)
-  TableFile ("CRD:"&Status.SerialNumber(1,1)&".CS616_5Min_NF_",64,-1,0,28,Day,0,0)
+	CardOut (0,-1)
+  TableFile ("USB:"&Status.SerialNumber(1,1)&".CS616_5Min_NF_",0,-1,0,28,Day,0,0)
   Sample (5,WC616(),IEEE4)
   Sample (5,tau616(),IEEE4)
   Sample (2,DIAG_CR3000(1),IEEE4)
@@ -525,7 +530,8 @@ EndTable
 
 DataTable (CS616_30Min,TRUE,-1)
   DataInterval (0,30,Min,100)
-  TableFile ("CRD:"&Status.SerialNumber(1,1)&".CS616_30Min_NF_",64,-1,0,28,Day,0,0)
+	CardOut (0,-1)
+  TableFile ("USB:"&Status.SerialNumber(1,1)&".CS616_30Min_NF_",0,-1,0,28,Day,0,0)
   Average (5,WC616(),IEEE4,False)
   Average (5,tau616(),IEEE4,False)
   Average (2,DIAG_CR3000(1),IEEE4,False)
@@ -568,7 +574,7 @@ Scan (1,Sec,0,0)
      TC_T(i) = -0.0837*x(i)^3 + 1.532*x(i)^2 - 22.843*x(i) + 25.019
     Next i
     PortSet (5,0 )
-    CallTable TC_30Min
+'    CallTable TC_30Min
   EndIf
 NextScan
 
@@ -624,4 +630,3 @@ SlowSequence
   CallTable CS616_30Min
  	NextScan
 EndProg
-
