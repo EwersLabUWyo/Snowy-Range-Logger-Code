@@ -1,0 +1,62 @@
+'CR1000X Series
+'Created by Short Cut (4.4)
+
+'Declare Variables and Units
+Dim LCount
+Public BattV
+Public PTemp_C
+Public Tref
+Public Burba(4)
+
+Units BattV=Volts
+Units PTemp_C=Deg C
+Units Tref=Deg C
+Units Burba=Deg C
+
+'Define Data Tables
+DataTable(Burba_17m_5min,True,-1)
+  TableFile("USB:"+Status.SerialNumber+"Burba_17m_5min",8,-1,0,24,Hr,0,0)
+	DataInterval(0,5,Min,10)
+	Sample(1,BattV,FP2)
+	Sample(1,PTemp_C,FP2)
+	Sample(1,Tref,FP2)
+	Sample(1,Burba(1),FP2)
+	Sample(1,Burba(2),FP2)
+	Sample(1,Burba(3),FP2)
+	Sample(1,Burba(4),FP2)
+EndTable
+
+DataTable(Table2,True,-1)
+	DataInterval(0,1440,Min,10)
+	Minimum(1,BattV,FP2,False,False)
+EndTable
+
+'Main Program
+BeginProg
+	'Main Scan
+	Scan(5,Min,1,0)
+		'Default CR1000X Datalogger Battery Voltage measurement 'BattV'
+		Battery(BattV)
+		'Default CR1000X Datalogger Wiring Panel Temperature measurement 'PTemp_C'
+		PanelTemp(PTemp_C,60)
+		'Type T Thermocouple measurements 'Tref'
+		TCDiff(Tref,1,mv200C,2,TypeT,PTemp_C,True,0,60,1,0)
+		'Turn AM16/32 Multiplexer On
+		PortSet(C2,1)
+		Delay(0,150,mSec)
+		LCount=1
+		SubScan(0,uSec,4)
+			'Switch to next AM16/32 Multiplexer channel
+			PulsePort(C1,10000)
+			'Type T Thermocouple measurements 'Burba()' on the AM16/32 Multiplexer
+			TCDiff(Burba(LCount),1,mV200C,1,TypeT,Tref,True,0,60,1,0)
+			LCount=LCount+1
+		NextSubScan
+		'Turn AM16/32 Multiplexer Off
+		PortSet(C2,0)
+		Delay(0,150,mSec)
+		'Call Data Tables and Store Data
+		CallTable Burba_17m_5min
+		CallTable Table2
+	NextScan
+EndProg
