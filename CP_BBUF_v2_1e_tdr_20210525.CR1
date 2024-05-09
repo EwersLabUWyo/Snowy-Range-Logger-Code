@@ -1,0 +1,627 @@
+'CR3000 Series Datalogger
+'To create a different opening program template, type in new
+'instructions and select Template | Save as Default Template
+'date:
+'program author:
+
+'SequentialMode
+
+'Declare Public Variables
+'Example:
+
+Public DIAG_CR3000(2)
+Alias DIAG_CR3000(1) = T_CR3000
+Alias DIAG_CR3000(2) = V_CR3000
+Units T_CR3000 = C
+Units V_CR3000 = V
+
+Public TC_T(12)
+Public TC_V(12)
+
+Public Gs(8)
+Alias Gs(1) = Gs_A5cm
+Alias Gs(2) = Gs_A10m
+Alias Gs(3) = Gs_A15m
+Alias Gs(4) = Gs_B5cm
+Alias Gs(5) = Gs_B10m
+Alias Gs(6) = Gs_B15m
+Alias Gs(7) = Gs_C5cm
+Units Gs = Wm-2
+
+Public Ts(5)
+Alias Ts(1) = Ts_C5cm
+Alias Ts(2) = Ts_C10cm
+Alias Ts(3) = Ts_C15cm
+Alias Ts(4) = Ts_C30cm
+Alias Ts(5) = Ts_C50cm
+Units Ts = C
+
+Public tau616(5)
+Public WC616(5)
+Units WC616 = m3/m3
+Alias WC616(1) = WC_C5cm
+Alias WC616(2) = WC_C10cm
+Alias WC616(3) = WC_C15cm
+Alias WC616(4) = WC_C30cm
+Alias WC616(5) = WC_C50cm
+
+Public Hydraprobe_Data(10,9)
+Alias Hydraprobe_Data(1,1) = Soil_Moist_A5cm
+Units Soil_Moist_A5cm = wfv
+Alias Hydraprobe_Data(1,2) = Temp_Corr_Soil_Cond_A5cm
+Units Temp_Corr_Soil_Cond_A5cm = S/m
+Alias Hydraprobe_Data(1,3) = Soil_Temp_C_A5cm
+Units Soil_Temp_C_A5cm = Â°C
+Alias Hydraprobe_Data(1,4) = Soil_Temp_F_A5cm
+Units Soil_Temp_F_A5cm = Fahrenheit
+Alias Hydraprobe_Data(1,5) = Soil_Cond_A5cm
+Units Soil_Cond_A5cm = S/m
+Alias Hydraprobe_Data(1,6) = Real_Diel_Perm_A5cm
+Alias Hydraprobe_Data(1,7) = Imag_Diel_Perm_A5cm
+Alias Hydraprobe_Data(1,8) = Corr_Real_Diel_Perm_A5cm
+Alias Hydraprobe_Data(1,9) = Corr_Imag_Diel_Perm_A5cm
+
+Alias Hydraprobe_Data(2,1) = Soil_Moist_A10cm
+Units Soil_Moist_A10cm = wfv
+Alias Hydraprobe_Data(2,2) = Temp_Corr_Soil_Cond_A10cm
+Units Temp_Corr_Soil_Cond_A10cm = S/m
+Alias Hydraprobe_Data(2,3) = Soil_Temp_C_A10cm
+Units Soil_Temp_C_A10cm = Â°C
+Alias Hydraprobe_Data(2,4) = Soil_Temp_F_A10cm
+Units Soil_Temp_F_A10cm = Fahrenheit
+Alias Hydraprobe_Data(2,5) = Soil_Cond_A10cm
+Units Soil_Cond_A10cm = S/m
+Alias Hydraprobe_Data(2,6) = Real_Diel_Perm_A10cm
+Alias Hydraprobe_Data(2,7) = Imag_Diel_Perm_A10cm
+Alias Hydraprobe_Data(2,8) = Corr_Real_Diel_Perm_A10cm
+Alias Hydraprobe_Data(2,9) = Corr_Imag_Diel_Perm_A10cm
+
+Alias Hydraprobe_Data(3,1) = Soil_Moist_A15cm
+Units Soil_Moist_A15cm = wfv
+Alias Hydraprobe_Data(3,2) = Temp_Corr_Soil_Cond_A15cm
+Units Temp_Corr_Soil_Cond_A15cm = S/m
+Alias Hydraprobe_Data(3,3) = Soil_Temp_C_A15cm
+Units Soil_Temp_C_A15cm = Â°C
+Alias Hydraprobe_Data(3,4) = Soil_Temp_F_A15cm
+Units Soil_Temp_F_A15cm = Fahrenheit
+Alias Hydraprobe_Data(3,5) = Soil_Cond_A15cm
+Units Soil_Cond_A15cm = S/m
+Alias Hydraprobe_Data(3,6) = Real_Diel_Perm_A15cm
+Alias Hydraprobe_Data(3,7) = Imag_Diel_Perm_A15cm
+Alias Hydraprobe_Data(3,8) = Corr_Real_Diel_Perm_A15cm
+Alias Hydraprobe_Data(3,9) = Corr_Imag_Diel_Perm_A15cm
+
+Alias Hydraprobe_Data(4,1) = Soil_Moist_A30cm
+Units Soil_Moist_A30cm = wfv
+Alias Hydraprobe_Data(4,2) = Temp_Corr_Soil_Cond_A30cm
+Units Temp_Corr_Soil_Cond_A30cm = S/m
+Alias Hydraprobe_Data(4,3) = Soil_Temp_C_A30cm
+Units Soil_Temp_C_A30cm = Â°C
+Alias Hydraprobe_Data(4,4) = Soil_Temp_F_A30cm
+Units Soil_Temp_F_A30cm = Fahrenheit
+Alias Hydraprobe_Data(4,5) = Soil_Cond_A30cm
+Units Soil_Cond_A30cm = S/m
+Alias Hydraprobe_Data(4,6) = Real_Diel_Perm_A30cm
+Alias Hydraprobe_Data(4,7) = Imag_Diel_Perm_A30cm
+Alias Hydraprobe_Data(4,8) = Corr_Real_Diel_Perm_A30cm
+Alias Hydraprobe_Data(4,9) = Corr_Imag_Diel_Perm_A30cm
+
+Alias Hydraprobe_Data(5,1) = Soil_Moist_A50cm
+Units Soil_Moist_A50cm = wfv
+Alias Hydraprobe_Data(5,2) = Temp_Corr_Soil_Cond_A50cm
+Units Temp_Corr_Soil_Cond_A50cm = S/m
+Alias Hydraprobe_Data(5,3) = Soil_Temp_C_A50cm
+Units Soil_Temp_C_A50cm = Â°C
+Alias Hydraprobe_Data(5,4) = Soil_Temp_F_A50cm
+Units Soil_Temp_F_A50cm = Fahrenheit
+Alias Hydraprobe_Data(5,5) = Soil_Cond_A50cm
+Units Soil_Cond_A50cm = S/m
+Alias Hydraprobe_Data(5,6) = Real_Diel_Perm_A50cm
+Alias Hydraprobe_Data(5,7) = Imag_Diel_Perm_A50cm
+Alias Hydraprobe_Data(5,8) = Corr_Real_Diel_Perm_A50cm
+Alias Hydraprobe_Data(5,9) = Corr_Imag_Diel_Perm_A50cm
+
+Alias Hydraprobe_Data(6,1) = Soil_Moist_B5cm
+Units Soil_Moist_B5cm = wfv
+Alias Hydraprobe_Data(6,2) = Temp_Corr_Soil_Cond_B5cm
+Units Temp_Corr_Soil_Cond_B5cm = S/m
+Alias Hydraprobe_Data(6,3) = Soil_Temp_C_B5cm
+Units Soil_Temp_C_B5cm = Â°C
+Alias Hydraprobe_Data(6,4) = Soil_Temp_F_B5cm
+Units Soil_Temp_F_B5cm = Fahrenheit
+Alias Hydraprobe_Data(6,5) = Soil_Cond_B5cm
+Units Soil_Cond_B5cm = S/m
+Alias Hydraprobe_Data(6,6) = Real_Diel_Perm_B5cm
+Alias Hydraprobe_Data(6,7) = Imag_Diel_Perm_B5cm
+Alias Hydraprobe_Data(6,8) = Corr_Real_Diel_Perm_B5cm
+Alias Hydraprobe_Data(6,9) = Corr_Imag_Diel_Perm_B5cm
+
+Alias Hydraprobe_Data(7,1) = Soil_Moist_B10cm
+Units Soil_Moist_B10cm = wfv
+Alias Hydraprobe_Data(7,2) = Temp_Corr_Soil_Cond_B10cm
+Units Temp_Corr_Soil_Cond_B10cm = S/m
+Alias Hydraprobe_Data(7,3) = Soil_Temp_C_B10cm
+Units Soil_Temp_C_B10cm = Â°C
+Alias Hydraprobe_Data(7,4) = Soil_Temp_F_B10cm
+Units Soil_Temp_F_B10cm = Fahrenheit
+Alias Hydraprobe_Data(7,5) = Soil_Cond_B10cm
+Units Soil_Cond_B10cm = S/m
+Alias Hydraprobe_Data(7,6) = Real_Diel_Perm_B10cm
+Alias Hydraprobe_Data(7,7) = Imag_Diel_Perm_B10cm
+Alias Hydraprobe_Data(7,8) = Corr_Real_Diel_Perm_B10cm
+Alias Hydraprobe_Data(7,9) = Corr_Imag_Diel_Perm_B10cm
+
+Alias Hydraprobe_Data(8,1) = Soil_Moist_B15cm
+Units Soil_Moist_B15cm = wfv
+Alias Hydraprobe_Data(8,2) = Temp_Corr_Soil_Cond_B15cm
+Units Temp_Corr_Soil_Cond_B15cm = S/m
+Alias Hydraprobe_Data(8,3) = Soil_Temp_C_B15cm
+Units Soil_Temp_C_B15cm = Â°C
+Alias Hydraprobe_Data(8,4) = Soil_Temp_F_B15cm
+Units Soil_Temp_F_B15cm = Fahrenheit
+Alias Hydraprobe_Data(8,5) = Soil_Cond_B15cm
+Units Soil_Cond_B15cm = S/m
+Alias Hydraprobe_Data(8,6) = Real_Diel_Perm_B15cm
+Alias Hydraprobe_Data(8,7) = Imag_Diel_Perm_B15cm
+Alias Hydraprobe_Data(8,8) = Corr_Real_Diel_Perm_B15cm
+Alias Hydraprobe_Data(8,9) = Corr_Imag_Diel_Perm_B15cm
+
+Alias Hydraprobe_Data(9,1) = Soil_Moist_B30cm
+Units Soil_Moist_B30cm = wfv
+Alias Hydraprobe_Data(9,2) = Temp_Corr_Soil_Cond_B30cm
+Units Temp_Corr_Soil_Cond_B30cm = S/m
+Alias Hydraprobe_Data(9,3) = Soil_Temp_C_B30cm
+Units Soil_Temp_C_B30cm = Â°C
+Alias Hydraprobe_Data(9,4) = Soil_Temp_F_B30cm
+Units Soil_Temp_F_B30cm = Fahrenheit
+Alias Hydraprobe_Data(9,5) = Soil_Cond_B30cm
+Units Soil_Cond_B30cm = S/m
+Alias Hydraprobe_Data(9,6) = Real_Diel_Perm_B30cm
+Alias Hydraprobe_Data(9,7) = Imag_Diel_Perm_B30cm
+Alias Hydraprobe_Data(9,8) = Corr_Real_Diel_Perm_B30cm
+Alias Hydraprobe_Data(9,9) = Corr_Imag_Diel_Perm_B30cm
+
+Alias Hydraprobe_Data(10,1) = Soil_Moist_B50cm
+Units Soil_Moist_B50cm = wfv
+Alias Hydraprobe_Data(10,2) = Temp_Corr_Soil_Cond_B50cm
+Units Temp_Corr_Soil_Cond_B50cm = S/m
+Alias Hydraprobe_Data(10,3) = Soil_Temp_C_B50cm
+Units Soil_Temp_C_B50cm = Â°C
+Alias Hydraprobe_Data(10,4) = Soil_Temp_F_B50cm
+Units Soil_Temp_F_B50cm = Fahrenheit
+Alias Hydraprobe_Data(10,5) = Soil_Cond_B50cm
+Units Soil_Cond_B50cm = S/m
+Alias Hydraprobe_Data(10,6) = Real_Diel_Perm_B50cm
+Alias Hydraprobe_Data(10,7) = Imag_Diel_Perm_B50cm
+Alias Hydraprobe_Data(10,8) = Corr_Real_Diel_Perm_B50cm
+Alias Hydraprobe_Data(10,9) = Corr_Imag_Diel_Perm_B50cm
+
+Public TC_TV(12)
+Public x(12)
+Public MEAS, HEAT, v_in, i, j
+
+'Define Data Tables.
+'DataTable (TC_30Min,1,-1) 'Set table size to # of records, or -1 to autoallocate.
+'	CardOut (0,-1)
+'	DataInterval (0,1,Sec,1)
+'  TableFile ("CRD:"&Status.SerialNumber(1,1)&".TC_30Min_UF_",64,-1,0,28,Day,0,0)
+'	Sample (12,TC_T(),IEEE4)
+'	Sample (12,TC_V(),IEEE4)
+'	Sample (2,DIAG_CR3000(1),IEEE4)
+'EndTable  
+
+DataTable (GsTs_5Min,TRUE,-1)
+  DataInterval (0,5,Min,100)
+  TableFile ("CRD:"&Status.SerialNumber(1,1)&".GsTs_5Min_UF_",64,-1,0,28,Day,0,0)
+  Average (7,Gs,IEEE4,False)
+  Average (5,Ts,IEEE4,False)
+  Average (2,DIAG_CR3000(1),IEEE4,False)
+  StdDev (7,Gs,IEEE4,False)
+  StdDev (5,Ts,IEEE4,False)
+  StdDev (2,DIAG_CR3000(1),IEEE4,False) 
+EndTable
+
+DataTable (GsTs_30Min,TRUE,-1)
+  DataInterval (0,30,Min,100)
+  TableFile ("CRD:"&Status.SerialNumber(1,1)&".GsTs_30Min_UF_",64,-1,0,28,Day,0,0)
+  Average (7,Gs,IEEE4,False)
+  Average (5,Ts,IEEE4,False)
+  Average (2,DIAG_CR3000(1),IEEE4,False)
+  StdDev (7,Gs,IEEE4,False)
+  StdDev (5,Ts,IEEE4,False)
+  StdDev (2,DIAG_CR3000(1),IEEE4,False) 
+EndTable
+
+DataTable (HydraProbe_5Min,TRUE,-1)
+  DataInterval (0,5,Min,100)
+  TableFile ("CRD:"&Status.SerialNumber(1,1)&".NRCS_zsStevens_5Min_UF_",64,-1,0,28,Day,0,0)
+  Sample (1,Soil_Moist_A5cm,IEEE4)
+  Sample (1,Soil_Moist_A10cm,IEEE4)
+  Sample (1,Soil_Moist_A15cm,IEEE4)
+  Sample (1,Soil_Moist_A30cm,IEEE4)
+  Sample (1,Soil_Moist_A50cm,IEEE4)
+  Sample (1,Soil_Moist_B5cm,IEEE4)
+  Sample (1,Soil_Moist_B10cm,IEEE4)
+  Sample (1,Soil_Moist_B15cm,IEEE4)
+  Sample (1,Soil_Moist_B30cm,IEEE4)
+  Sample (1,Soil_Moist_B50cm,IEEE4)
+  Sample (1,Temp_Corr_Soil_Cond_A5cm,IEEE4)
+  Sample (1,Temp_Corr_Soil_Cond_A10cm,IEEE4)
+  Sample (1,Temp_Corr_Soil_Cond_A15cm,IEEE4)
+  Sample (1,Temp_Corr_Soil_Cond_A30cm,IEEE4)
+  Sample (1,Temp_Corr_Soil_Cond_A50cm,IEEE4)
+  Sample (1,Temp_Corr_Soil_Cond_B5cm,IEEE4)
+  Sample (1,Temp_Corr_Soil_Cond_B10cm,IEEE4)
+  Sample (1,Temp_Corr_Soil_Cond_B15cm,IEEE4)
+  Sample (1,Temp_Corr_Soil_Cond_B30cm,IEEE4)
+  Sample (1,Temp_Corr_Soil_Cond_B50cm,IEEE4)
+  Sample (1,Soil_Temp_C_A5cm,IEEE4)
+  Sample (1,Soil_Temp_C_A10cm,IEEE4)
+  Sample (1,Soil_Temp_C_A15cm,IEEE4)
+  Sample (1,Soil_Temp_C_A30cm,IEEE4)
+  Sample (1,Soil_Temp_C_A50cm,IEEE4)
+  Sample (1,Soil_Temp_C_B5cm,IEEE4)
+  Sample (1,Soil_Temp_C_B10cm,IEEE4)
+  Sample (1,Soil_Temp_C_B15cm,IEEE4)
+  Sample (1,Soil_Temp_C_B30cm,IEEE4)
+  Sample (1,Soil_Temp_C_B50cm,IEEE4)
+  Sample (1,Soil_Temp_F_A5cm,IEEE4)
+  Sample (1,Soil_Temp_F_A10cm,IEEE4)
+  Sample (1,Soil_Temp_F_A15cm,IEEE4)
+  Sample (1,Soil_Temp_F_A30cm,IEEE4)
+  Sample (1,Soil_Temp_F_A50cm,IEEE4)
+  Sample (1,Soil_Temp_F_B5cm,IEEE4)
+  Sample (1,Soil_Temp_F_B10cm,IEEE4)
+  Sample (1,Soil_Temp_F_B15cm,IEEE4)
+  Sample (1,Soil_Temp_F_B30cm,IEEE4)
+  Sample (1,Soil_Temp_F_B50cm,IEEE4)
+  Sample (1,Soil_Cond_A5cm,IEEE4)
+  Sample (1,Soil_Cond_A10cm,IEEE4)
+  Sample (1,Soil_Cond_A15cm,IEEE4)
+  Sample (1,Soil_Cond_A30cm,IEEE4)
+  Sample (1,Soil_Cond_A50cm,IEEE4)
+  Sample (1,Soil_Cond_B5cm,IEEE4)
+  Sample (1,Soil_Cond_B10cm,IEEE4)
+  Sample (1,Soil_Cond_B15cm,IEEE4)
+  Sample (1,Soil_Cond_B30cm,IEEE4)
+  Sample (1,Soil_Cond_B50cm,IEEE4)
+  Sample (1,Real_Diel_Perm_A5cm,IEEE4)
+  Sample (1,Real_Diel_Perm_A10cm,IEEE4)
+  Sample (1,Real_Diel_Perm_A15cm,IEEE4)
+  Sample (1,Real_Diel_Perm_A30cm,IEEE4)
+  Sample (1,Real_Diel_Perm_A50cm,IEEE4)
+  Sample (1,Real_Diel_Perm_B5cm,IEEE4)
+  Sample (1,Real_Diel_Perm_B10cm,IEEE4)
+  Sample (1,Real_Diel_Perm_B15cm,IEEE4)
+  Sample (1,Real_Diel_Perm_B30cm,IEEE4)
+  Sample (1,Real_Diel_Perm_B50cm,IEEE4)
+  Sample (1,Imag_Diel_Perm_A5cm,IEEE4)
+  Sample (1,Imag_Diel_Perm_A10cm,IEEE4)
+  Sample (1,Imag_Diel_Perm_A15cm,IEEE4)
+  Sample (1,Imag_Diel_Perm_A30cm,IEEE4)
+  Sample (1,Imag_Diel_Perm_A50cm,IEEE4)
+  Sample (1,Imag_Diel_Perm_B5cm,IEEE4)
+  Sample (1,Imag_Diel_Perm_B10cm,IEEE4)
+  Sample (1,Imag_Diel_Perm_B15cm,IEEE4)
+  Sample (1,Imag_Diel_Perm_B30cm,IEEE4)
+  Sample (1,Imag_Diel_Perm_B50cm,IEEE4)
+  Sample (1,Corr_Real_Diel_Perm_A5cm,IEEE4)
+  Sample (1,Corr_Real_Diel_Perm_A10cm,IEEE4)
+  Sample (1,Corr_Real_Diel_Perm_A15cm,IEEE4)
+  Sample (1,Corr_Real_Diel_Perm_A30cm,IEEE4)
+  Sample (1,Corr_Real_Diel_Perm_A50cm,IEEE4)
+  Sample (1,Corr_Real_Diel_Perm_B5cm,IEEE4)
+  Sample (1,Corr_Real_Diel_Perm_B10cm,IEEE4)
+  Sample (1,Corr_Real_Diel_Perm_B15cm,IEEE4)
+  Sample (1,Corr_Real_Diel_Perm_B30cm,IEEE4)
+  Sample (1,Corr_Real_Diel_Perm_B50cm,IEEE4)
+  Sample (1,Corr_Imag_Diel_Perm_A5cm,IEEE4)
+  Sample (1,Corr_Imag_Diel_Perm_A10cm,IEEE4)
+  Sample (1,Corr_Imag_Diel_Perm_A15cm,IEEE4)
+  Sample (1,Corr_Imag_Diel_Perm_A30cm,IEEE4)
+  Sample (1,Corr_Imag_Diel_Perm_A50cm,IEEE4)
+  Sample (1,Corr_Imag_Diel_Perm_B5cm,IEEE4)
+  Sample (1,Corr_Imag_Diel_Perm_B10cm,IEEE4)
+  Sample (1,Corr_Imag_Diel_Perm_B15cm,IEEE4)
+  Sample (1,Corr_Imag_Diel_Perm_B30cm,IEEE4)
+  Sample (1,Corr_Imag_Diel_Perm_B50cm,IEEE4)
+  Sample (2,DIAG_CR3000(1),IEEE4)
+EndTable
+
+DataTable (HydraProbe_30Min,TRUE,-1)
+  DataInterval (0,30,Min,100)
+  TableFile ("CRD:"&Status.SerialNumber(1,1)&".NRCS_zsStevens_30Min_UF_",64,-1,0,28,Day,0,0)
+  Average (1,Soil_Moist_A5cm,IEEE4,False)
+  Average (1,Soil_Moist_A10cm,IEEE4,False)
+  Average (1,Soil_Moist_A15cm,IEEE4,False)
+  Average (1,Soil_Moist_A30cm,IEEE4,False)
+  Average (1,Soil_Moist_A50cm,IEEE4,False)
+  Average (1,Soil_Moist_B5cm,IEEE4,False)
+  Average (1,Soil_Moist_B10cm,IEEE4,False)
+  Average (1,Soil_Moist_B15cm,IEEE4,False)
+  Average (1,Soil_Moist_B30cm,IEEE4,False)
+  Average (1,Soil_Moist_B50cm,IEEE4,False)
+  Average (1,Temp_Corr_Soil_Cond_A5cm,IEEE4,False)
+  Average (1,Temp_Corr_Soil_Cond_A10cm,IEEE4,False)
+  Average (1,Temp_Corr_Soil_Cond_A15cm,IEEE4,False)
+  Average (1,Temp_Corr_Soil_Cond_A30cm,IEEE4,False)
+  Average (1,Temp_Corr_Soil_Cond_A50cm,IEEE4,False)
+  Average (1,Temp_Corr_Soil_Cond_B5cm,IEEE4,False)
+  Average (1,Temp_Corr_Soil_Cond_B10cm,IEEE4,False)
+  Average (1,Temp_Corr_Soil_Cond_B15cm,IEEE4,False)
+  Average (1,Temp_Corr_Soil_Cond_B30cm,IEEE4,False)
+  Average (1,Temp_Corr_Soil_Cond_B50cm,IEEE4,False)
+  Average (1,Soil_Temp_C_A5cm,IEEE4,False)
+  Average (1,Soil_Temp_C_A10cm,IEEE4,False)
+  Average (1,Soil_Temp_C_A15cm,IEEE4,False)
+  Average (1,Soil_Temp_C_A30cm,IEEE4,False)
+  Average (1,Soil_Temp_C_A50cm,IEEE4,False)
+  Average (1,Soil_Temp_C_B5cm,IEEE4,False)
+  Average (1,Soil_Temp_C_B10cm,IEEE4,False)
+  Average (1,Soil_Temp_C_B15cm,IEEE4,False)
+  Average (1,Soil_Temp_C_B30cm,IEEE4,False)
+  Average (1,Soil_Temp_C_B50cm,IEEE4,False)
+  Average (1,Soil_Temp_F_A5cm,IEEE4,False)
+  Average (1,Soil_Temp_F_A10cm,IEEE4,False)
+  Average (1,Soil_Temp_F_A15cm,IEEE4,False)
+  Average (1,Soil_Temp_F_A30cm,IEEE4,False)
+  Average (1,Soil_Temp_F_A50cm,IEEE4,False)
+  Average (1,Soil_Temp_F_B5cm,IEEE4,False)
+  Average (1,Soil_Temp_F_B10cm,IEEE4,False)
+  Average (1,Soil_Temp_F_B15cm,IEEE4,False)
+  Average (1,Soil_Temp_F_B30cm,IEEE4,False)
+  Average (1,Soil_Temp_F_B50cm,IEEE4,False)
+  Average (1,Soil_Cond_A5cm,IEEE4,False)
+  Average (1,Soil_Cond_A10cm,IEEE4,False)
+  Average (1,Soil_Cond_A15cm,IEEE4,False)
+  Average (1,Soil_Cond_A30cm,IEEE4,False)
+  Average (1,Soil_Cond_A50cm,IEEE4,False)
+  Average (1,Soil_Cond_B5cm,IEEE4,False)
+  Average (1,Soil_Cond_B10cm,IEEE4,False)
+  Average (1,Soil_Cond_B15cm,IEEE4,False)
+  Average (1,Soil_Cond_B30cm,IEEE4,False)
+  Average (1,Soil_Cond_B50cm,IEEE4,False)
+  Average (1,Real_Diel_Perm_A5cm,IEEE4,False)
+  Average (1,Real_Diel_Perm_A10cm,IEEE4,False)
+  Average (1,Real_Diel_Perm_A15cm,IEEE4,False)
+  Average (1,Real_Diel_Perm_A30cm,IEEE4,False)
+  Average (1,Real_Diel_Perm_A50cm,IEEE4,False)
+  Average (1,Real_Diel_Perm_B5cm,IEEE4,False)
+  Average (1,Real_Diel_Perm_B10cm,IEEE4,False)
+  Average (1,Real_Diel_Perm_B15cm,IEEE4,False)
+  Average (1,Real_Diel_Perm_B30cm,IEEE4,False)
+  Average (1,Real_Diel_Perm_B50cm,IEEE4,False)
+  Average (1,Imag_Diel_Perm_A5cm,IEEE4,False)
+  Average (1,Imag_Diel_Perm_A10cm,IEEE4,False)
+  Average (1,Imag_Diel_Perm_A15cm,IEEE4,False)
+  Average (1,Imag_Diel_Perm_A30cm,IEEE4,False)
+  Average (1,Imag_Diel_Perm_A50cm,IEEE4,False)
+  Average (1,Imag_Diel_Perm_B5cm,IEEE4,False)
+  Average (1,Imag_Diel_Perm_B10cm,IEEE4,False)
+  Average (1,Imag_Diel_Perm_B15cm,IEEE4,False)
+  Average (1,Imag_Diel_Perm_B30cm,IEEE4,False)
+  Average (1,Imag_Diel_Perm_B50cm,IEEE4,False)
+  Average (1,Corr_Real_Diel_Perm_A5cm,IEEE4,False)
+  Average (1,Corr_Real_Diel_Perm_A10cm,IEEE4,False)
+  Average (1,Corr_Real_Diel_Perm_A15cm,IEEE4,False)
+  Average (1,Corr_Real_Diel_Perm_A30cm,IEEE4,False)
+  Average (1,Corr_Real_Diel_Perm_A50cm,IEEE4,False)
+  Average (1,Corr_Real_Diel_Perm_B5cm,IEEE4,False)
+  Average (1,Corr_Real_Diel_Perm_B10cm,IEEE4,False)
+  Average (1,Corr_Real_Diel_Perm_B15cm,IEEE4,False)
+  Average (1,Corr_Real_Diel_Perm_B30cm,IEEE4,False)
+  Average (1,Corr_Real_Diel_Perm_B50cm,IEEE4,False)
+  Average (1,Corr_Imag_Diel_Perm_A5cm,IEEE4,False)
+  Average (1,Corr_Imag_Diel_Perm_A10cm,IEEE4,False)
+  Average (1,Corr_Imag_Diel_Perm_A15cm,IEEE4,False)
+  Average (1,Corr_Imag_Diel_Perm_A30cm,IEEE4,False)
+  Average (1,Corr_Imag_Diel_Perm_A50cm,IEEE4,False)
+  Average (1,Corr_Imag_Diel_Perm_B5cm,IEEE4,False)
+  Average (1,Corr_Imag_Diel_Perm_B10cm,IEEE4,False)
+  Average (1,Corr_Imag_Diel_Perm_B15cm,IEEE4,False)
+  Average (1,Corr_Imag_Diel_Perm_B30cm,IEEE4,False)
+  Average (1,Corr_Imag_Diel_Perm_B50cm,IEEE4,False)
+  Average (2,DIAG_CR3000(1),IEEE4,False)
+  StdDev (1,Soil_Moist_A5cm,IEEE4,False)
+  StdDev (1,Soil_Moist_A10cm,IEEE4,False)
+  StdDev (1,Soil_Moist_A15cm,IEEE4,False)
+  StdDev (1,Soil_Moist_A30cm,IEEE4,False)
+  StdDev (1,Soil_Moist_A50cm,IEEE4,False)
+  StdDev (1,Soil_Moist_B5cm,IEEE4,False)
+  StdDev (1,Soil_Moist_B10cm,IEEE4,False)
+  StdDev (1,Soil_Moist_B15cm,IEEE4,False)
+  StdDev (1,Soil_Moist_B30cm,IEEE4,False)
+  StdDev (1,Soil_Moist_B50cm,IEEE4,False)
+  StdDev (1,Temp_Corr_Soil_Cond_A5cm,IEEE4,False)
+  StdDev (1,Temp_Corr_Soil_Cond_A10cm,IEEE4,False)
+  StdDev (1,Temp_Corr_Soil_Cond_A15cm,IEEE4,False)
+  StdDev (1,Temp_Corr_Soil_Cond_A30cm,IEEE4,False)
+  StdDev (1,Temp_Corr_Soil_Cond_A50cm,IEEE4,False)
+  StdDev (1,Temp_Corr_Soil_Cond_B5cm,IEEE4,False)
+  StdDev (1,Temp_Corr_Soil_Cond_B10cm,IEEE4,False)
+  StdDev (1,Temp_Corr_Soil_Cond_B15cm,IEEE4,False)
+  StdDev (1,Temp_Corr_Soil_Cond_B30cm,IEEE4,False)
+  StdDev (1,Temp_Corr_Soil_Cond_B50cm,IEEE4,False)
+  StdDev (1,Soil_Temp_C_A5cm,IEEE4,False)
+  StdDev (1,Soil_Temp_C_A10cm,IEEE4,False)
+  StdDev (1,Soil_Temp_C_A15cm,IEEE4,False)
+  StdDev (1,Soil_Temp_C_A30cm,IEEE4,False)
+  StdDev (1,Soil_Temp_C_A50cm,IEEE4,False)
+  StdDev (1,Soil_Temp_C_B5cm,IEEE4,False)
+  StdDev (1,Soil_Temp_C_B10cm,IEEE4,False)
+  StdDev (1,Soil_Temp_C_B15cm,IEEE4,False)
+  StdDev (1,Soil_Temp_C_B30cm,IEEE4,False)
+  StdDev (1,Soil_Temp_C_B50cm,IEEE4,False)
+  StdDev (1,Soil_Temp_F_A5cm,IEEE4,False)
+  StdDev (1,Soil_Temp_F_A10cm,IEEE4,False)
+  StdDev (1,Soil_Temp_F_A15cm,IEEE4,False)
+  StdDev (1,Soil_Temp_F_A30cm,IEEE4,False)
+  StdDev (1,Soil_Temp_F_A50cm,IEEE4,False)
+  StdDev (1,Soil_Temp_F_B5cm,IEEE4,False)
+  StdDev (1,Soil_Temp_F_B10cm,IEEE4,False)
+  StdDev (1,Soil_Temp_F_B15cm,IEEE4,False)
+  StdDev (1,Soil_Temp_F_B30cm,IEEE4,False)
+  StdDev (1,Soil_Temp_F_B50cm,IEEE4,False)
+  StdDev (1,Soil_Cond_A5cm,IEEE4,False)
+  StdDev (1,Soil_Cond_A10cm,IEEE4,False)
+  StdDev (1,Soil_Cond_A15cm,IEEE4,False)
+  StdDev (1,Soil_Cond_A30cm,IEEE4,False)
+  StdDev (1,Soil_Cond_A50cm,IEEE4,False)
+  StdDev (1,Soil_Cond_B5cm,IEEE4,False)
+  StdDev (1,Soil_Cond_B10cm,IEEE4,False)
+  StdDev (1,Soil_Cond_B15cm,IEEE4,False)
+  StdDev (1,Soil_Cond_B30cm,IEEE4,False)
+  StdDev (1,Soil_Cond_B50cm,IEEE4,False)
+  StdDev (1,Real_Diel_Perm_A5cm,IEEE4,False)
+  StdDev (1,Real_Diel_Perm_A10cm,IEEE4,False)
+  StdDev (1,Real_Diel_Perm_A15cm,IEEE4,False)
+  StdDev (1,Real_Diel_Perm_A30cm,IEEE4,False)
+  StdDev (1,Real_Diel_Perm_A50cm,IEEE4,False)
+  StdDev (1,Real_Diel_Perm_B5cm,IEEE4,False)
+  StdDev (1,Real_Diel_Perm_B10cm,IEEE4,False)
+  StdDev (1,Real_Diel_Perm_B15cm,IEEE4,False)
+  StdDev (1,Real_Diel_Perm_B30cm,IEEE4,False)
+  StdDev (1,Real_Diel_Perm_B50cm,IEEE4,False)
+  StdDev (1,Imag_Diel_Perm_A5cm,IEEE4,False)
+  StdDev (1,Imag_Diel_Perm_A10cm,IEEE4,False)
+  StdDev (1,Imag_Diel_Perm_A15cm,IEEE4,False)
+  StdDev (1,Imag_Diel_Perm_A30cm,IEEE4,False)
+  StdDev (1,Imag_Diel_Perm_A50cm,IEEE4,False)
+  StdDev (1,Imag_Diel_Perm_B5cm,IEEE4,False)
+  StdDev (1,Imag_Diel_Perm_B10cm,IEEE4,False)
+  StdDev (1,Imag_Diel_Perm_B15cm,IEEE4,False)
+  StdDev (1,Imag_Diel_Perm_B30cm,IEEE4,False)
+  StdDev (1,Imag_Diel_Perm_B50cm,IEEE4,False)
+  StdDev (1,Corr_Real_Diel_Perm_A5cm,IEEE4,False)
+  StdDev (1,Corr_Real_Diel_Perm_A10cm,IEEE4,False)
+  StdDev (1,Corr_Real_Diel_Perm_A15cm,IEEE4,False)
+  StdDev (1,Corr_Real_Diel_Perm_A30cm,IEEE4,False)
+  StdDev (1,Corr_Real_Diel_Perm_A50cm,IEEE4,False)
+  StdDev (1,Corr_Real_Diel_Perm_B5cm,IEEE4,False)
+  StdDev (1,Corr_Real_Diel_Perm_B10cm,IEEE4,False)
+  StdDev (1,Corr_Real_Diel_Perm_B15cm,IEEE4,False)
+  StdDev (1,Corr_Real_Diel_Perm_B30cm,IEEE4,False)
+  StdDev (1,Corr_Real_Diel_Perm_B50cm,IEEE4,False)
+  StdDev (1,Corr_Imag_Diel_Perm_A5cm,IEEE4,False)
+  StdDev (1,Corr_Imag_Diel_Perm_A10cm,IEEE4,False)
+  StdDev (1,Corr_Imag_Diel_Perm_A15cm,IEEE4,False)
+  StdDev (1,Corr_Imag_Diel_Perm_A30cm,IEEE4,False)
+  StdDev (1,Corr_Imag_Diel_Perm_A50cm,IEEE4,False)
+  StdDev (1,Corr_Imag_Diel_Perm_B5cm,IEEE4,False)
+  StdDev (1,Corr_Imag_Diel_Perm_B10cm,IEEE4,False)
+  StdDev (1,Corr_Imag_Diel_Perm_B15cm,IEEE4,False)
+  StdDev (1,Corr_Imag_Diel_Perm_B30cm,IEEE4,False)
+  StdDev (1,Corr_Imag_Diel_Perm_B50cm,IEEE4,False)
+  StdDev (2,DIAG_CR3000(1),IEEE4,False) 
+EndTable
+
+DataTable (CS616_5Min,TRUE,-1)
+  DataInterval (0,5,Min,100)
+  TableFile ("CRD:"&Status.SerialNumber(1,1)&".CS616_5Min_UF_",64,-1,0,28,Day,0,0)
+  Sample (5,WC616(),IEEE4)
+  Sample (5,tau616(),IEEE4)
+  Sample (2,DIAG_CR3000(1),IEEE4)
+EndTable
+
+DataTable (CS616_30Min,TRUE,-1)
+  DataInterval (0,30,Min,100)
+  TableFile ("CRD:"&Status.SerialNumber(1,1)&".CS616_30Min_UF_",64,-1,0,28,Day,0,0)
+  Average (5,WC616(),IEEE4,False)
+  Average (5,tau616(),IEEE4,False)
+  Average (2,DIAG_CR3000(1),IEEE4,False)
+  StdDev (5,WC616(),IEEE4,False)
+  StdDev (5,tau616(),IEEE4,False)
+  StdDev (2,DIAG_CR3000(1),IEEE4,False) 
+EndTable
+
+'Main Program
+BeginProg
+  PortsConfig (&B10110000,&B10110000)
+  v_in = 350 'mV
+  
+Scan (1,Sec,0,0)
+	PanelTemp (T_CR3000,250)
+	Battery (V_CR3000)
+  If IfTime (900,1800,Sec) Then
+    MEAS = 1
+    HEAT = 1
+    PortSet (8,1 )
+  EndIf
+  If IfTime (930,1800,Sec) Then
+    HEAT = 0
+    PortSet (8,0 )  
+  EndIf
+  If IfTime (960,1800,Sec) Then
+    MEAS = 0
+  EndIf
+  If MEAS = 1 Then
+    ExciteV (Vx1,v_in,0)
+    PortSet (5,1 )
+    For i = 1 To 12 Step 1
+     PortSet (6,1 )
+     Delay (0,10,mSec)
+     PortSet (6,0 )
+     Delay (0,10,mSec)
+     VoltDiff (TC_TV(i),1,mV250,1,True ,0,250,1.0,0)
+     VoltDiff (TC_V(i),1,mV250,2,True ,0,250,1.0,0)
+     x(i) = LN(v_in/TC_TV(i) - 1)
+     TC_T(i) = -0.0837*x(i)^3 + 1.532*x(i)^2 - 22.843*x(i) + 25.019
+    Next i
+    PortSet (5,0 )
+'    CallTable TC_30Min
+  EndIf
+NextScan
+
+SlowSequence
+  Scan (60,Sec,0,0)
+    
+    PortSet (5,1 )
+    For i = 1 To 12 Step 1
+     PortSet (6,1 )
+     Delay (0,10,mSec)
+     PortSet (6,0 )
+     Delay (0,10,mSec)
+    Next i
+    For i = 1 To 4 Step 1
+     PortSet (6,1 )
+     Delay (0,10,mSec)
+     PortSet (6,0 )
+     Delay (0,10,mSec)
+     j = 2*(i-1)+1
+     VoltDiff (Gs(j),2,mV25,1,1,0,_60Hz,1.0,0)    
+    Next i
+    PortSet (5,0 )
+
+    Gs(1) = Gs(1)/60.8*1000 'A5 = S/N 1259
+    Gs(2) = Gs(2)/60.53*1000 'A10 = S/N 12080
+    Gs(3) = Gs(3)/61.77*1000 'A15 = S/N 12086
+    Gs(4) = Gs(4)*36.8 'B5 = S/N 933050
+    Gs(5) = Gs(5)*43.7 'B10 = S/N 753287
+    Gs(6) = Gs(6)*42.5 'B15 = S/N H953288
+    Gs(7) = Gs(7)*53.7 'C5 = S/N H973164
+        
+'  VoltSe (Gs(),7,mV20,5,1,0,_60Hz,1.0,0)    
+  'VoltDiff (Gs(),7,mV20,2,True ,0,_60Hz,1,0)
+  'TCDiff (Ts(),5,mV20,3,TypeT,T_CR3000,True ,0,_60Hz,1.0,0)
+  TCSe (Ts(),5,mV25,5,TypeT,T_CR3000,1,0,_60Hz,1.0,0)
+  CallTable GsTs_5Min
+  CallTable GsTs_30Min  
+NextScan
+
+SlowSequence
+  Scan (5,Min,0,0)
+  ' Return 9 measurement: HJFGOKMLN
+  ' All probes are set to "SILT" similar to the old NRCS Vitel sensors
+  SDI12Recorder (Hydraprobe_Data(),7,"0123456789","M!",1.0,0)
+  ' Measure CS616 soil moisture probes
+  CS616 (tau616(),5,11,4,5,1.0,0)
+  For i = 1 To 5 
+    WC616(i) = -0.60376 +0.040484*tau616(i) - 0.000176*tau616(i)^2    
+  Next i
+  CallTable HydraProbe_5Min
+  CallTable HydraProbe_30Min
+  CallTable CS616_5Min
+  CallTable CS616_30Min
+ 	NextScan
+EndProg
+

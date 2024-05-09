@@ -1,0 +1,143 @@
+'CR1000
+'Created by Short Cut (3.2)
+'Chimney Park Sap Flow BBNF
+'written/edited by Dan Beverly and Mario Bretfeld
+' 2019-05-02 by Mario Bretfeld (edited PRI output)
+
+'Declare Variables and Units
+Dim LCount
+Public BattV
+Public PTemp_C
+Public DiffV(10)
+Public Temp_C(5)
+Dim Mult(10)={1,1,1,1,1,1,1,1,1,1}
+Dim Offs(10)={0,0,0,0,0,0,0,0,0,0}
+
+Alias DiffV(1) = BBNF.PICO.Stem_01
+Alias DiffV(2) = BBNF.PICO.Stem_02 
+Alias DiffV(3) = BBNF.PICO.Stem_03 
+Alias DiffV(4) = BBNF.PICO.Stem_04 
+Alias DiffV(5) = BBNF.PICO.Stem_05 
+Alias DiffV(6) = BBNF.PICO.Stem_06 
+Alias DiffV(7) = BBNF.PICO.Stem_07 
+Alias DiffV(8) = BBNF.PICO.Stem_08 
+Alias DiffV(9) = BBNF.PICO.Stem_09 
+Alias DiffV(10) = BBNF.PICO.Stem_10 
+
+Alias Temp_C(1) = BBNF.PICO.StemTemp_1
+Alias Temp_C(2) = BBNF.PICO.StemTemp_2
+Alias Temp_C(3) = BBNF.PICO.StemTemp_3
+Alias Temp_C(4) = BBNF.PICO.StemTemp_4
+Alias Temp_C(5) = BBNF.PICO.StemTemp_5
+
+Units BattV = V
+Units PTemp_C = C
+Units DiffV = mV
+Units Temp_C = C
+
+'PRI variables
+Public UpOut_2m(3)
+Public DownOut_2m(3)
+
+Public PRI_2m
+
+Alias UpOut_2m(1) = Up_532_2m
+Alias DownOut_2m(1) = Down_532_2m
+Alias UpOut_2m(2) = Up_570_2m
+Alias DownOut_2m(2) = Down_570_2m
+Alias UpOut_2m(3) = Ind_up_2m
+Alias DownOut_2m(3) = Ind_down_2m
+
+Units Up_532_2m = W/m^2 nm
+Units Down_532_2m = W/m^2 nm sr
+Units Up_570_2m = W/m^2 nm
+Units Down_570_2m = W/m^2 nm sr
+
+'Define Data Tables
+DataTable(BBUF_SapFlow,True,-1)
+	DataInterval(0,30,Min,10)
+	TableFile ("USB:BBUF_SapFlow",8,-1,0,0,Min,0,0)      '******Code for USB download
+	Minimum(1,BattV,FP2,False,False)
+	Average(1,PTemp_C,IEEE4,False)
+	
+	Average(1,DiffV(1),IEEE4,False)
+	Average(1,DiffV(2),IEEE4,False)
+	Average(1,DiffV(3),IEEE4,False)
+	Average(1,DiffV(4),IEEE4,False)
+	Average(1,DiffV(5),IEEE4,False)
+	Average(1,DiffV(6),IEEE4,False)
+	Average(1,DiffV(7),IEEE4,False)
+	Average(1,DiffV(8),IEEE4,False)
+	Average(1,DiffV(9),IEEE4,False)
+	Average(1,DiffV(10),IEEE4,False)
+
+	Average(1,Temp_C(1),IEEE4,False)
+	Average(1,Temp_C(2),IEEE4,False)
+	Average(1,Temp_C(3),IEEE4,False)
+	Average(1,Temp_C(4),IEEE4,False)
+	Average(1,Temp_C(5),IEEE4,False)
+	
+EndTable
+
+DataTable(PRI_BBUF_2m,True,-1)
+	DataInterval(0,1,Min,10)
+	TableFile ("USB:PRI_BBUF_2m",8,-1,0,0,Min,0,0)      '******Code for USB download
+  Median(1,PRI_2m,12,IEEE4,False)
+	Median(1,Down_532_2m,12,IEEE4,False)
+	Median(1,Down_570_2m,12,IEEE4,False)
+	Median(1,Up_532_2m,12,IEEE4,False)
+	Median(1,Up_570_2m,12,IEEE4,False)
+	Median(1,Ind_down_2m,12,IEEE4,False)
+	Median(1,Ind_up_2m,12,IEEE4,False)
+	
+EndTable
+'Main Program
+BeginProg
+	'Main Scan
+	Scan(5,Sec,1,0)
+	  
+		'Query sensor for 3 SDI-12 outputs.  Default address for all Decagon Digital sensors is 0.
+		SDI12Recorder (DownOut_2m(),3,0,"M!",1.0,0)
+		SDI12Recorder (UpOut_2m(),5,0,"M!",1.0,0)
+		'calculate NDVI from individual outputs of both sensors.  See equation 1 of the SRS manual
+		PRI_2m = ((Down_532_2m / Up_532_2m) - (Down_570_2m / Up_570_2m)) / ((Down_532_2m / Up_532_2m) + (Down_570_2m / Up_570_2m))
+		
+		'Call Data Tables and Store Data
+'		CallTable PRI_BBNF_2m
+			  
+  NextScan
+ 
+  SlowSequence 
+  Scan (30,Sec,3,0)
+
+		'Default CR1000 Datalogger Battery Voltage measurement 'BattV'
+		Battery(BattV)
+		'Default CR1000 Datalogger Wiring Panel Temperature measurement 'PTemp_C'
+		PanelTemp(PTemp_C,_60Hz)
+		
+	  'Type T Thermocouple measurements 'Temp_C()'
+		TCDiff(Temp_C(),5,mV2_5C,1,TypeT,PTemp_C,True,0,_60Hz,1,0)
+			
+		'Turn AM16/32 Multiplexer On
+		PortSet(2,1)
+		Delay(0,150,mSec)
+		LCount = 1
+		SubScan(0,uSec,10)
+			'Switch to next AM16/32 Multiplexer channel
+			PulsePort(1,10000)
+			'Generic Differential Voltage measurements 'DiffV()' on the AM16/32 Multiplexer
+			VoltDiff(DiffV(LCount),1,mV25C,6,True,0,_60Hz,Mult(LCount),Offs(LCount))
+			LCount=LCount+1
+		NextSubScan
+
+		'Turn AM16/32 Multiplexer Off
+		PortSet(2,0)
+		Delay(0,150,mSec)
+
+		'Call Data Tables and Store Data
+		CallTable BBUF_SapFlow
+    CallTable PRI_BBUF_2m
+		
+	  NextScan
+	  
+EndProg
