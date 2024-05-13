@@ -3,18 +3,19 @@
 'Created 2024-04-16
 
 '\\\\\\\\\\\\\\\\\\\\Declare Variables (Data + Wiring)/////////////////////////
-Const SCAN_INTERVAL_S = 120
+Const SCAN_INTERVAL_S = 5
 Const STORAGE_INTERVAL_S = SCAN_INTERVAL_S
+Const MUX_INTERVAL_S = 30
 
 '======= Datalogger default measurements =======
 Public BattV : Units BattV = Volts
 Public PTemp_C : Units PTemp_C = C
 
 '======= CNR4 Net radiometer, SN 234184 ========
-Const MULT_PYRGEO_UPPER = 1000/8.09' W m-2 mV-1
-Const MULT_PYRGEO_LOWER = 1000/8.89' W m-2 mV-1
-Const MULT_PYRANO_UPPER = 1000/12.39' W m-2 mV-1
-Const MULT_PYRANO_LOWER = 1000/13.02' W m-2 mV-1
+Const MULT_PYRGEO_UPPER = 1000.0/8.09' W m-2 mV-1
+Const MULT_PYRGEO_LOWER = 1000.0/8.89' W m-2 mV-1
+Const MULT_PYRANO_UPPER = 1000.0/12.39' W m-2 mV-1
+Const MULT_PYRANO_LOWER = 1000.0/13.02' W m-2 mV-1
 Const SIGMA = 5.67e-8  ' W m-2 K-4
 
 Public SW_IN: Units SW_IN = W m-2
@@ -90,6 +91,7 @@ Const VX_RMY = Vx2
 Const SE_RMY = 11
 
 '======= MUX AM16/32 =======
+' Remember to hook up analog grounds b/w MUX and Datalogger!
 Const MUX_RES = C2
 Const MUX_CLK = C4
 Const VX_MUX_COM_ODD_L = VX4  ' ST100 excitation
@@ -97,8 +99,13 @@ Const SE_MUX_COM_ODD_H = 13   ' ST100 SE channel
 Dim i
 
   '======= ST 100 Temperature Probes =======
+  ' SE Therm lead: White
+  ' Excitiation Therm: Red
+  ' Therm ground: Black
+  ' Shield: clear
   Const N_ST100 = 14  ' number of sensors
-  Dim TSN(N_ST100) : Units TSN = C
+  Public TSN(N_ST100) : Units TSN = C
+
   
   
 
@@ -147,8 +154,8 @@ BeginProg
 		' a 4WPB100 bridge resistor.
 		VoltSe(SW_IN, 1, mV200C, SE_PYRANO_UPPER, 1, 0, 60, MULT_PYRANO_UPPER, 0)
 		VoltSe(SW_OUT, 1, mV200C, SE_PYRANO_LOWER, 1, 0, 60, MULT_PYRANO_LOWER, 0)
-		VoltSe(LW_IN, 1, mV200C, SE_PYRGEO_UPPER, 1, 0, 60, MULT_PYRGEO_UPPER, 0)
-    VoltSe(LW_OUT, 1, mV200C, SE_PYRGEO_LOWER, 1, 0, 60, MULT_PYRGEO_LOWER, 0)
+		VoltSe(LW_IN_Uncorr, 1, mV200C, SE_PYRGEO_UPPER, 1, 0, 60, MULT_PYRGEO_UPPER, 0)
+    VoltSe(LW_OUT_Uncorr, 1, mV200C, SE_PYRGEO_LOWER, 1, 0, 60, MULT_PYRGEO_LOWER, 0)
     BrHalf4W(CNR4_Tbody_C,1,mV1000,mV1000,DIFF_PRT_BRIDGE,VX_PRT_BRIDGE,1,4000,True,True,0,250,1.0,0)  ' measure bridge resistpr
     PRTCalc(CNR4_Tbody_C,1,CNR4_Tbody_C,0,1,0)  ' apply PRT equation
     CNR4_Self_Heat = SIGMA*(CNR4_Tbody_C + 273.15)^4  ' SB law for instrument heat
@@ -180,19 +187,18 @@ BeginProg
 		If (WD >= 355) OR (WD < 0) Then WD = 0
 		
     '==== ST-100 Temp Probes on MUX ====
-    i = 1
-    PortSet(MUX_RES, 1) : Delay(0, 150, mSec)
-    SubScan(100,mSec,N_ST100)
-      PulsePort(MUX_CLK, 10000)10.5
-      BrHalf(TSN(i), 1, mV5000, SE_MUX_COM_ODD_H, VX_MUX_COM_ODD_L, 1, 2500, True, 500, 60, 1, 0)
-      i += 1
-    NextSubScan
-    PortSet(MUX_RES, 0) : Delay(0, 150, mSec)
-    TSN = 24900*(TSN - 1)
-    ' Steinhart-Hart Equation
-    TSN = 1/(1.129241e-3 + 2.341077e-4*LN(TSN) + 8.775468e-8*LN(TSN)^3) - 273.15
-		
-    
+    If TimeIntoInterval(0,MUX_INTERVAL_S,Sec)
+      PortSet(MUX_RES, 1) : Delay(0, 150, mSec)
+      For i = 1 To N_ST100
+        PulsePort(MUX_CLK,10000)
+        BrHalf(TSN(i), 1, mV5000, SE_MUX_COM_ODD_H, VX_MUX_COM_ODD_L, 1, 2500, True, 0, 60, 1, 0)
+        TSN(i) = 24900*(1 - TSN(i))/TSN(i)
+        ' Steinhart-Hart Equation
+        TSN(i) = 1/(1.129241e-3 + 2.341077e-4*LN(TSN(i)) + 8.775468e-8*LN(TSN(i))^3) - 273.15
+        If (TSN(i) < -45) OR (TSN(i) > 35) Then TSN(i) = NAN  ' filter bad values
+      Next
+      PortSet(MUX_RES, 0) : Delay(0, 150, mSec)
+    EndIf
 		
     CallTable MetData
 	NextScan
