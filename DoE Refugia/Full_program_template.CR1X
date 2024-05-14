@@ -2,16 +2,22 @@
 'Author : Alex Fox
 'Created 2024-04-16
 
-'\\\\\\\\\\\\\\\\\\\\Declare Variables (Data + Wiring)/////////////////////////
+'\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\////////////////////////////////////////////
+'\\\\\\\\\\\\\ Define Instruments and Measurement Subroutines /////////////////
+'\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\////////////////////////////////////////////
 Const SCAN_INTERVAL_S = 5
-Const STORAGE_INTERVAL_S = SCAN_INTERVAL_S
-Const MUX_INTERVAL_S = 30
+Const STORAGE_INTERVAL_S = 300
+Const MUX_INTERVAL_S = 300
 
+'===============================================
 '======= Datalogger default measurements =======
+'===============================================
 Public BattV : Units BattV = Volts
 Public PTemp_C : Units PTemp_C = C
 
+'===============================================
 '======= CNR4 Net radiometer, SN 234184 ========
+'===============================================
 Const MULT_PYRGEO_UPPER = 1000.0/8.09' W m-2 mV-1
 Const MULT_PYRGEO_LOWER = 1000.0/8.89' W m-2 mV-1
 Const MULT_PYRANO_UPPER = 1000.0/12.39' W m-2 mV-1
@@ -50,19 +56,43 @@ Public LW_OUT : Units LW_OUT = W m-2
 '  Yellow: PT100 Right
 '  Brown: PT100 Right
 '  Thick black/clear: Shield
-'  When making a PRT measurement using the 4WPB100 PRT bridge, "left" and "right"
-'  cables form a group. A group must go in either (a) 4WPB100 L + CR1000X Diff H 
-'  or in (b) 4WPB100 AG + CR1000X Diff L. Order does not matter (ie. "left" and "right" are arbitrary).
-'  For example, Grey -> 4WPB100 AG, Green -> CR1000X 2L, Yellow -> CR1000X 2H, Brown -> 4WPB100 is a 
-'  valid setup
+'  When making a PRT measurement using the 4WPB100 PRT bridge, "left" and 
+' "right" cables form a group. A group must go in either (a) 4WPB100 L + 
+' CR1000X Diff H or in (b) 4WPB100 AG + CR1000X Diff L. Order does not matter 
+' (ie. "left" and "right" are arbitrary). For example, Grey -> 4WPB100 AG, 
+' Green -> CR1000X 2L, Yellow -> CR1000X 2H, Brown -> 4WPB100 is a valid setup
+
+' Measure a cnr4 in Single ended mode for radiation, and PRT mode for body temp
 Const SE_PYRANO_UPPER = 7
 Const SE_PYRANO_LOWER = 8
 Const SE_PYRGEO_UPPER = 5
 Const SE_PYRGEO_LOWER = 6
 Const DIFF_PRT_BRIDGE = 1
 Const VX_PRT_BRIDGE = Vx1
+Sub measure_cnr4_se_prt(SW_IN, SW_OUT, LW_IN_Uncorr, LW_OUT_Uncorr, LW_IN, _
+  LW_OUT, CNR4_Tbody_C, CNR4_Self_Heat, ALB, NETRAD, NetSw, NetLw)
+    VoltSe(SW_IN, 1, mV200C, SE_PYRANO_UPPER, 1, 0, 60, MULT_PYRANO_UPPER, 0)
+		VoltSe(SW_OUT, 1, mV200C, SE_PYRANO_LOWER, 1, 0, 60, MULT_PYRANO_LOWER, 0)
+		VoltSe(LW_IN_Uncorr, 1, mV200C, SE_PYRGEO_UPPER, 1, 0, 60, _
+		  MULT_PYRGEO_UPPER, 0)
+    VoltSe(LW_OUT_Uncorr, 1, mV200C, SE_PYRGEO_LOWER, 1, 0, 60, _
+      MULT_PYRGEO_LOWER, 0)
+    BrHalf4W(CNR4_Tbody_C,1,mV1000,mV1000,DIFF_PRT_BRIDGE,VX_PRT_BRIDGE,1, _
+      4000,True,True,0,250,1.0,0)
+    PRTCalc(CNR4_Tbody_C,1,CNR4_Tbody_C,0,1,0)
+    CNR4_Self_Heat = SIGMA*(CNR4_Tbody_C + 273.15)^4  ' Stefan boltzmann
+		LW_IN = LW_IN_Uncorr + CNR4_Self_Heat  ' apply correction
+		LW_OUT = LW_OUT_Uncorr + CNR4_Self_Heat
+		NetSw = SW_IN - SW_OUT
+		NetLw = LW_IN - LW_OUT
+		ALB = SW_OUT/SW_IN
+		If (ALB > 1) OR (ALB < 0) Then ALB = NAN
+		NETRAD = NetSw + NetLw
+EndSub
 
+'=====================================
 '======= JuddComm Depth Sensor =======
+'=====================================
 Const Z_JUDD = 2  ' m
 
 Public Judd_Ta_C : Units Judd_Ta_C = C
@@ -76,10 +106,27 @@ Public D_SNOW : Units D_SNOW = m
 'Black: G
 'Clear: Shield
 'Green: Enable
-Const C_JUDD_ENABLE = C1
-Const DIFF_JUDD = 5
 
+'Measure a JuddComm snow depth sensor in analog mode
+Const C_JUDD_ENABLE = C6
+Const DIFF_JUDD = 5
+Sub measure_juddcom_analog(t, dist, depth, z)
+  ' Depth sensor is first turned on, then after 800ms it outputs the air 
+  ' temperature. 1800ms later, it outputs the temperature-corrected distance
+  ' measurement. The sensor is then turned off.
+  PortSet(C_JUDD_ENABLE, 1)
+  Delay(0, 800, mSec)
+  VoltDiff(t,1,mV5000,DIFF_JUDD,True,0,60,0.2,-273.15)
+  Delay(0, 1800, mSec)
+  VoltDiff(dist, 1, mV5000,DIFF_JUDD,True, 0, 60, 0.005, 0)
+  PortSet(C_JUDD_ENABLE, 0)
+  depth = z - dist
+  If (dist < 0.5) OR (depth < 0.008) Then depth = NAN
+EndSub 
+
+'======================================
 '======= RM Young 05103 WS & WD =======
+'======================================
 Public WS : Units WS = m s-1
 Public WD : Units WD = Deg  ' degrees past N
 ' Red: Pulse
@@ -90,29 +137,40 @@ Const P_RMY = P1
 Const VX_RMY = Vx2
 Const SE_RMY = 11
 
-'======= MUX AM16/32 =======
+'==================================================
+'======= ST100 Temp Probe on an AM16/32 MUX =======
+'==================================================
+
+Dim i
+Const N_ST100 = 14  ' number of sensors
+Public TSN(N_ST100) : Units TSN = C
+
+' SE Therm lead: White
+' Excitiation Therm: Red
+' Therm ground: Black
+' Shield: clear
 ' Remember to hook up analog grounds b/w MUX and Datalogger!
 Const MUX_RES = C2
 Const MUX_CLK = C4
-Const VX_MUX_COM_ODD_L = VX4  ' ST100 excitation
-Const SE_MUX_COM_ODD_H = 13   ' ST100 SE channel
-Dim i
 
-  '======= ST 100 Temperature Probes =======
-  ' SE Therm lead: White
-  ' Excitiation Therm: Red
-  ' Therm ground: Black
-  ' Shield: clear
-  Const N_ST100 = 14  ' number of sensors
-  Public TSN(N_ST100) : Units TSN = C
+' Measure an ST100 and copy the measurement into variable t.
+Const VX_ST100 = Vx4
+Const SE_ST100 = 13
+Sub measure_st100(t)
+  BrHalf(t, 1, mV5000, SE_ST100, VX_ST100, 1, 2500, True, 0, 60, 1, 0)
+  t = 24900*(1 - t)/t
+  ' Steinhart-Hart Equation
+  t = 1/(1.129241e-3 + 2.341077e-4*LN(t) + 8.775468e-8*LN(t)^3) - 273.15
+  If (t < -45) OR (t > 35) Then t = NAN  ' filter bad values
+EndSub
 
-  
-  
-
-'\\\\\\\\\\\\\\\\\\\\Define Data Tables/////////////////////////
+'\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\////////////////////////////////////////////
+'\\\\\\\\\\\\\\\\\\\\\\\\\\\\Define Data Tables////////////////////////////////
+'\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\////////////////////////////////////////////
 DataTable(MetData,True,-1)
 	DataInterval(0,STORAGE_INTERVAL_S,Sec,10)
-	TableFile("CRD:"+Status.SerialNumber+"_Met"+STORAGE_INTERVAL_S+"Sec",64,-1,0,24,Hr,0,0)
+	TableFile("CRD:"+Status.SerialNumber+"_Met"+STORAGE_INTERVAL_S+"Sec", 64,-1 _
+	  ,0,24,Hr,0,0)
 	
 	Minimum(1,BattV, IEEE4,False,False)
 	Sample(1,PTemp_C,IEEE4)
@@ -137,65 +195,33 @@ DataTable(MetData,True,-1)
   Sample(1, WD, IEEE4)
   
   Sample(N_ST100, TSN(1), IEEE4)
-  
 EndTable
 
-'\\\\\\\\\\\\\\\\\\\\Main Program/////////////////////////
+'\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\////////////////////////////////////////////
+'\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\Main Program////////////////////////////////////
+'\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\////////////////////////////////////////////
 BeginProg
 	'Main Scan
 	Scan(SCAN_INTERVAL_S,Sec,1,0)
-	  '====Defaults====
 		Battery(BattV)
 		PanelTemp(PTemp_C,60)
-		
-		'====CNR4 Net Radiometer measurements====
-		' LW radiation needs to be corrected for radiation emitted by the sensor
-		' body. Sensor body temperature is measured using a PRT sensor wired into
-		' a 4WPB100 bridge resistor.
-		VoltSe(SW_IN, 1, mV200C, SE_PYRANO_UPPER, 1, 0, 60, MULT_PYRANO_UPPER, 0)
-		VoltSe(SW_OUT, 1, mV200C, SE_PYRANO_LOWER, 1, 0, 60, MULT_PYRANO_LOWER, 0)
-		VoltSe(LW_IN_Uncorr, 1, mV200C, SE_PYRGEO_UPPER, 1, 0, 60, MULT_PYRGEO_UPPER, 0)
-    VoltSe(LW_OUT_Uncorr, 1, mV200C, SE_PYRGEO_LOWER, 1, 0, 60, MULT_PYRGEO_LOWER, 0)
-    BrHalf4W(CNR4_Tbody_C,1,mV1000,mV1000,DIFF_PRT_BRIDGE,VX_PRT_BRIDGE,1,4000,True,True,0,250,1.0,0)  ' measure bridge resistpr
-    PRTCalc(CNR4_Tbody_C,1,CNR4_Tbody_C,0,1,0)  ' apply PRT equation
-    CNR4_Self_Heat = SIGMA*(CNR4_Tbody_C + 273.15)^4  ' SB law for instrument heat
-		LW_IN = LW_IN_Uncorr + CNR4_Self_Heat  ' apply correction
-		LW_OUT = LW_OUT_Uncorr + CNR4_Self_Heat
-		NetSw = SW_IN - SW_OUT
-		NetLw = LW_IN - LW_OUT
-		ALB = SW_OUT/SW_IN
-		If (ALB > 1) OR (ALB < 0) Then ALB = NAN
-		NETRAD = NetSw + NetLw
-		
-    '====JuddComm Snow Depth Sensor measurements====
-    ' Depth sensor is first turned on, then after 800ms it outputs the air 
-    ' temperature. 1800ms later, it outputs the temperature-corrected distance
-    ' measurement. The sensor is then turned off.
-    ' The sensor cannot read distances less than 50cm
-    PortSet(C_JUDD_ENABLE, 1)
-    Delay(0, 800, mSec)
-    VoltDiff(Judd_Ta_C,1,mV5000,DIFF_JUDD,True,0,60,0.2,-273.15)
-    Delay(0, 1800, mSec)
-    VoltDiff(Judd_Dist, 1, mV5000,DIFF_JUDD,True, 0, 60, 0.005, 0)
-    PortSet(C_JUDD_ENABLE, 0)
-    D_SNOW = Z_JUDD - Judd_Dist
-    If (Judd_Dist < 0.5) OR (D_SNOW < 0.008) Then D_SNOW = NAN
+		measure_cnr4_se_prt(SW_IN, SW_OUT, LW_IN_Uncorr, LW_OUT_Uncorr, LW_IN, _
+		  LW_OUT, CNR4_Tbody_C, CNR4_Self_Heat, ALB, NETRAD, NetSw, NetLw)
+    measure_juddcom_analog(Judd_Ta_C, Judd_Dist, D_SNOW, Z_JUDD)
     
-    '==== RM Young 05103 WS and WD ====
+    'RM Young 05103 WS and WD
+    'unfortunately, PulseCount cannot be used inside a subroutine, so we 
+    'include the full code here in the main program without abstraction
     PulseCount(WS,1, P_RMY, 5, 1, 0.098, 0.0)
     BrHalf(WD, 1, mV5000, SE_RMY, VX_RMY, 1, 2500, True, 20000,60, 355.0, 0.0)
 		If (WD >= 355) OR (WD < 0) Then WD = 0
 		
-    '==== ST-100 Temp Probes on MUX ====
+    'MUX measurements
     If TimeIntoInterval(0,MUX_INTERVAL_S,Sec)
       PortSet(MUX_RES, 1) : Delay(0, 150, mSec)
       For i = 1 To N_ST100
         PulsePort(MUX_CLK,10000)
-        BrHalf(TSN(i), 1, mV5000, SE_MUX_COM_ODD_H, VX_MUX_COM_ODD_L, 1, 2500, True, 0, 60, 1, 0)
-        TSN(i) = 24900*(1 - TSN(i))/TSN(i)
-        ' Steinhart-Hart Equation
-        TSN(i) = 1/(1.129241e-3 + 2.341077e-4*LN(TSN(i)) + 8.775468e-8*LN(TSN(i))^3) - 273.15
-        If (TSN(i) < -45) OR (TSN(i) > 35) Then TSN(i) = NAN  ' filter bad values
+        measure_st100(TSN(i))
       Next
       PortSet(MUX_RES, 0) : Delay(0, 150, mSec)
     EndIf
