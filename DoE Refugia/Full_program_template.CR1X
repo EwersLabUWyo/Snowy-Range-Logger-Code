@@ -2,6 +2,8 @@
 'Author : Alex Fox
 'Created 2024-04-16
 
+'TODO: Add Temp/Press/Humidity, probably through an ATMOS14 or something.
+
 '\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\////////////////////////////////////////////
 '\\\\\\\\\\\\\ Define Instruments and Measurement Subroutines /////////////////
 '\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\////////////////////////////////////////////
@@ -150,7 +152,7 @@ Public WD : Units WD = Deg  ' degrees past N
 ' Red: Pulse
 ' White/Blk/Clr: AG
 ' Green: SE
-' Brown?: Vx
+' Blue: Vx
 Const P_RMY = P1
 Const VX_RMY = Vx2
 Const SE_RMY = 11
@@ -341,7 +343,7 @@ BeginProg
     'include the full code here in the main program without abstraction
     PulseCount(WS,1, P_RMY, 5, 1, 0.098, 0.0)
     BrHalf(WD, 1, mV5000, SE_RMY, VX_RMY, 1, 2500, True, 20000,60, 355.0, 0.0)
-		If (WD >= 355) OR (WD < 0) Then WD = 0
+		If (WD >= 355) OR (WD < 0) Then WD = 0  'WD is in the half-open [0, 355)
 		
     'MUX measurements
     If TimeIntoInterval(0,SLOW_SCAN_INTERVAL_S,Sec)
