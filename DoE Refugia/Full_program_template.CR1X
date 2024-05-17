@@ -26,6 +26,12 @@ Const MULT_PYRANO_UPPER = 1000.0/12.39' W m-2 mV-1
 Const MULT_PYRANO_LOWER = 1000.0/13.02' W m-2 mV-1
 Const SIGMA = 5.67e-8  ' W m-2 K-4
 
+Public SW_IN_mV : Units SW_IN_mV = mV
+Public SW_OUT_mV : Units SW_OUT_mV = mV
+Public LW_IN_Uncorr_mV : Units LW_IN_Uncorr_mV = mV
+Public LW_OUT_Uncorr_mV : Units LW_OUT_Uncorr_mV = mV
+Public CNR4_Tbody_C_BrHalf4W : Units CNR4_Tbody_C_BrHalf4W = unitless
+
 Public SW_IN: Units SW_IN = W m-2
 Public SW_OUT : Units SW_OUT = W m-2
 Public LW_IN_Uncorr : Units LW_IN_Uncorr = W m-2
@@ -72,7 +78,8 @@ Const SE_PYRGEO_LOWER = 6
 Const DIFF_PRT_BRIDGE = 1
 Const VX_PRT_BRIDGE = Vx1
 Sub measure_cnr4_se_prt(SW_IN, SW_OUT, LW_IN_Uncorr, LW_OUT_Uncorr, LW_IN, _
-  LW_OUT, CNR4_Tbody_C, CNR4_Self_Heat, ALB, NETRAD, NetSw, NetLw)
+  LW_OUT, CNR4_Tbody_C, CNR4_Self_Heat, ALB, NETRAD, NetSw, NetLw, SW_IN_mV, _
+  SW_OUT_mV, LW_IN_Uncorr_mV, LW_OUT_Uncorr_mV, CNR4_Tbody_C_BrHalf4W)
     VoltSe(SW_IN, 1, mV200C, SE_PYRANO_UPPER, 1, 0, 60, MULT_PYRANO_UPPER, 0)
 		VoltSe(SW_OUT, 1, mV200C, SE_PYRANO_LOWER, 1, 0, 60, MULT_PYRANO_LOWER, 0)
 		VoltSe(LW_IN_Uncorr, 1, mV200C, SE_PYRGEO_UPPER, 1, 0, 60, _
@@ -81,6 +88,13 @@ Sub measure_cnr4_se_prt(SW_IN, SW_OUT, LW_IN_Uncorr, LW_OUT_Uncorr, LW_IN, _
       MULT_PYRGEO_LOWER, 0)
     BrHalf4W(CNR4_Tbody_C,1,mV1000,mV1000,DIFF_PRT_BRIDGE,VX_PRT_BRIDGE,1, _
       4000,True,True,0,250,1.0,0)
+
+    Move(SW_IN_mV, 1, SW_IN/MULT_PYRANO_UPPER, 1)
+    Move(SW_OUT_mV, 1, SW_OUT/MULT_PYRANO_LOWER, 1)
+    Move(LW_IN_mV, 1, LW_IN/MULT_PYRGEO_UPPER, 1)
+    Move(LW_OUT_mV, 1, LW_OUT/MULT_PYRGEO_LOWER, 1)
+    Move(CNR4_Tbody_C_BrHalf4W, 1, CNR4_Tbody_C, 1)
+
     PRTCalc(CNR4_Tbody_C,1,CNR4_Tbody_C,0,1,0)
     CNR4_Self_Heat = SIGMA*(CNR4_Tbody_C + 273.15)^4  ' Stefan boltzmann
 		LW_IN = LW_IN_Uncorr + CNR4_Self_Heat  ' apply correction
@@ -147,6 +161,7 @@ Const SE_RMY = 11
 
 Dim i
 Const N_ST100 = 14  ' number of sensors
+Public TSN_BrHalf(N_ST100) : Units TSN_BrHalf = unitless
 Public TSN(N_ST100) : Units TSN = C
 
 ' SE Therm lead: White
@@ -160,12 +175,13 @@ Const MUX_CLK = C4
 ' Measure an ST100 and copy the measurement into variable t.
 Const VX_ST100 = Vx4
 Const SE_ST100 = 13
-Sub measure_st100(t)
-  BrHalf(t, 1, mV5000, SE_ST100, VX_ST100, 1, 2500, True, 0, 60, 1, 0)
-  t = 24900*(1 - t)/t
+Sub measure_st100(TSN, TSN_BrHalf)
+  BrHalf(TSN, 1, mV5000, SE_ST100, VX_ST100, 1, 2500, True, 0, 60, 1, 0)
+  Move(TSN_BrHalf, 1, TSN, 1)
+  TSN = 24900*(1 - TSN)/TSN
   ' Steinhart-Hart Equation
-  t = 1/(1.129241e-3 + 2.341077e-4*LN(t) + 8.775468e-8*LN(t)^3) - 273.15
-  If (t < -45) OR (t > 35) Then t = NAN  ' filter bad values
+  TSN = 1/(1.129241e-3 + 2.341077e-4*LN(TSN) + 8.775468e-8*LN(TSN)^3) - 273.15
+  If (TSN < -45) OR (TSN > 35) Then TSN = NAN  ' filter bad values
 EndSub
 
 '====================================
@@ -228,9 +244,28 @@ Sub measure_teros12_3pits(tmp_teros12(3), VWC(N_DEPTHS, N_PITS), _
   SW12(SW12_TEROS12,0)
 EndSub
 
+'==========================================='
+'======= LI190 PAR Sensor, SN QXXXXX ======='
+'==========================================='
+Const MULT_LI190 = 420.69
+Public PPFD_mV : Units PPFD_mV = mV
+Public PPFD : Units PPFD = umol m-2 s-1
+
+'From campbell: Red = High, Black = Low, Clear = Shield
+'From LI-COR with LI290 604ohm resistor: Red = High, Black = Low
+Const DIFF_LI190 = 6
+Sub measure_li190(PPFD, PPFD_mV)
+  VoltDiff(1, PPFD, mV200, DIFF_LI190, True, 0, 60, MULT_LI190, 0.0)
+  Move(PPFD_mV, 1, PPFD/MULT_LI190, 1)
+  If (PPFD < 0) Then PPFD = 0
+EndSub
+
+
 '\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\////////////////////////////////////////////
 '\\\\\\\\\\\\\\\\\\\\\\\\\\\\Define Data Tables////////////////////////////////
 '\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\////////////////////////////////////////////
+
+'Primary data table
 DataTable(SlowData,True,-1)
 	DataInterval(0,STORAGE_INTERVAL_S,Sec,10)
 	TableFile("CRD:"+Status.SerialNumber+"_"+STORAGE_INTERVAL_S+"Sec", 64,-1,0, _
@@ -250,6 +285,8 @@ DataTable(SlowData,True,-1)
 	Sample(1,LW_IN_Uncorr, IEEE4)
 	Sample(1,LW_OUT_Uncorr, IEEE4)
 	Sample(1,CNR4_Tbody_C, FP2)
+
+  Sample(1, PPFD, FP2)
 	
   Sample(1,Judd_Ta_C,FP2)
   Sample(1,Judd_Dist,FP2)
@@ -267,6 +304,23 @@ DataTable(SlowData,True,-1)
   Sample(N_PITS*N_DEPTHS, TEROS12_Diag(1, 1), UINT2)
 EndTable
 
+'Stores raw voltages from sensors that have more complicated postprocessing
+DataTable(SlowData_Raw, True, -1)
+  DataInterval(0,STORAGE_INTERVAL_S,Sec,10)
+	TableFile("CRD:"+Status.SerialNumber+"_"+STORAGE_INTERVAL_S+"Sec_Raw", _
+    64,-1,0,24,Hr,0,0)
+  Sample(1,SW_IN_mV, IEEE4)
+	Sample(1,SW_OUT_mV, IEEE4)
+	Sample(1,LW_IN_Uncorr_mV, IEEE4)
+	Sample(1,LW_OUT_Uncorr_mV, IEEE4)
+	Sample(1,CNR4_Tbody_C_BrHalf4W, FP2)
+
+  Sample(1, PPFD_mV, FP2)
+  
+  Sample(N_ST100, TSN_BrHalf(1), FP2)
+EndTable
+
+
 '\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\////////////////////////////////////////////
 '\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\Main Program////////////////////////////////////
 '\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\////////////////////////////////////////////
@@ -276,8 +330,11 @@ BeginProg
 		Battery(BattV)
 		PanelTemp(PTemp_C,60)
 		measure_cnr4_se_prt(SW_IN, SW_OUT, LW_IN_Uncorr, LW_OUT_Uncorr, LW_IN, _
-		  LW_OUT, CNR4_Tbody_C, CNR4_Self_Heat, ALB, NETRAD, NetSw, NetLw)
+      LW_OUT, CNR4_Tbody_C, CNR4_Self_Heat, ALB, NETRAD, NetSw, NetLw, _
+      SW_IN_mV, SW_OUT_mV, LW_IN_Uncorr_mV, LW_OUT_Uncorr_mV, _
+      CNR4_Tbody_C_BrHalf4W)
     measure_juddcom_analog(Judd_Ta_C, Judd_Dist, D_SNOW, Z_JUDD)
+    measure_li190(PPFD, PPFD_mV)
     
     'RM Young 05103 WS and WD
     'unfortunately, PulseCount cannot be used inside a subroutine, so we 
@@ -291,7 +348,7 @@ BeginProg
       PortSet(MUX_RES, 1) : Delay(0, 150, mSec)
       For i = 1 To N_ST100
         PulsePort(MUX_CLK,10000)
-        measure_st100(TSN(i))
+        measure_st100(TSN(i), TSN_BrHalf(i))
       Next
       PortSet(MUX_RES, 0) : Delay(0, 150, mSec)
       
@@ -303,5 +360,6 @@ BeginProg
     EndIf
 		
     CallTable SlowData
+    CallTable SlowData_Raw
 	NextScan
 EndProg
