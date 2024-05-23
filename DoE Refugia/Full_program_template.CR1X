@@ -2,15 +2,47 @@
 'Author : Alex Fox
 'Created 2024-04-16
 
-'TODO: Add Temp/Press/Humidity, probably through an ATMOS14 or something.
+'\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\////////////////////////////////////////////
+'\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ READ ME ////////////////////////////////////////
+'\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\////////////////////////////////////////////
+' 
+' # When setting up on a new station:
+' ## Plugging everything in
+' Plug in the Juddcom (snow depth), CNR4, ATMOS14, RMyoung, temp/humidity/pres,
+' and soil moisture sensor box into the appropriate ports on the enclosure.
+' Note that the CNR1/4 has 3 cables coming out of it: 2 radiation cables and 1
+' "Therm" cable. Make sure so install the 6-pin radiation cable into its 6-pin
+' mate on the enclosure.
+'
+' Not all connectors are wired consistantly, so you must match the proper
+' Sensor cable to each logger box. Each sensor cable that is fitted with a 
+' quick-connector is marked with its name and serial/id number. Match this with
+' the serial/id number writted on the cable in the enclosure.
+' 
+' ## Inputting Calibration Constants
+' Before you modify the program, you should save a copy to associate with this
+' specific site. For example, if you are installing this tower at site 4, name
+' the program doe_refugia_site_4.crx
+' 
+' You will need to provide calibration constants for the following sensors:
+'  * SI-111 Infrared thermometer (mC0, mC1, mC2, bC0, bC1, bC2)
+'  * LI-190 PAR sensor (MULT_LI190)
+'  * CNR1/4 4-channel net radiometer (MULT_PYRGEO/PYRANO_UPPER/LOWER)
+' Once you've input these constants, add a comment specifying:
+'  * The serial number of the instrument
+'  * The calibration date of the instrument
+'
+' When you get back to Laramie, commit to the snowy range logger code repo on
+' github.
+
 
 '\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\////////////////////////////////////////////
 '\\\\\\\\\\\\\ Define Instruments and Measurement Subroutines /////////////////
 '\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\////////////////////////////////////////////
 
 ' Main scan/storage table
-Const MAIN_SCAN_INTERVAL_S = 300
-Const SLOW_SCAN_INTERVAL_S = 300
+Const MAIN_SCAN_INTERVAL_S = 10
+Const SLOW_SCAN_INTERVAL_S = 30
 Const STORAGE_INTERVAL_S = 300
 
 '===============================================
@@ -19,13 +51,13 @@ Const STORAGE_INTERVAL_S = 300
 Public BattV : Units BattV = Volts
 Public PTemp_C : Units PTemp_C = C
 
-'===============================================
-'======= CNR4 Net radiometer, SN 234184 ========
-'===============================================
-Const MULT_PYRGEO_UPPER = 1000.0/8.09' W m-2 mV-1
-Const MULT_PYRGEO_LOWER = 1000.0/8.89' W m-2 mV-1
-Const MULT_PYRANO_UPPER = 1000.0/12.39' W m-2 mV-1
-Const MULT_PYRANO_LOWER = 1000.0/13.02' W m-2 mV-1
+'====================================
+'======= CNR4 Net radiometer ========
+'====================================
+Const MULT_PYRGEO_UPPER = 8.09' uV W-1 m-2
+Const MULT_PYRGEO_LOWER = 8.89' uV W-1 m-2
+Const MULT_PYRANO_UPPER = 12.39' uV W-1 m-2
+Const MULT_PYRANO_LOWER = 13.02' uV W-1 m-2
 Const SIGMA = 5.67e-8  ' W m-2 K-4
 
 Public SW_IN_mV : Units SW_IN_mV = mV
@@ -82,19 +114,21 @@ Const VX_PRT_BRIDGE = Vx1
 Sub measure_cnr4_se_prt(SW_IN, SW_OUT, LW_IN_Uncorr, LW_OUT_Uncorr, LW_IN, _
   LW_OUT, CNR4_Tbody_C, CNR4_Self_Heat, ALB, NETRAD, NetSw, NetLw, SW_IN_mV, _
   SW_OUT_mV, LW_IN_Uncorr_mV, LW_OUT_Uncorr_mV, CNR4_Tbody_C_BrHalf4W)
-    VoltSe(SW_IN, 1, mV200C, SE_PYRANO_UPPER, 1, 0, 60, MULT_PYRANO_UPPER, 0)
-		VoltSe(SW_OUT, 1, mV200C, SE_PYRANO_LOWER, 1, 0, 60, MULT_PYRANO_LOWER, 0)
+    VoltSe(SW_IN, 1, mV200C, SE_PYRANO_UPPER, 1, 0, 60, _
+      1000.0/MULT_PYRANO_UPPER, 0)
+		VoltSe(SW_OUT, 1, mV200C, SE_PYRANO_LOWER, 1, 0, 60, _
+		  1000.0/MULT_PYRANO_LOWER, 0)
 		VoltSe(LW_IN_Uncorr, 1, mV200C, SE_PYRGEO_UPPER, 1, 0, 60, _
-		  MULT_PYRGEO_UPPER, 0)
+		  1000.0/MULT_PYRGEO_UPPER, 0)
     VoltSe(LW_OUT_Uncorr, 1, mV200C, SE_PYRGEO_LOWER, 1, 0, 60, _
-      MULT_PYRGEO_LOWER, 0)
+      1000.0/MULT_PYRGEO_LOWER, 0)
     BrHalf4W(CNR4_Tbody_C,1,mV1000,mV1000,DIFF_PRT_BRIDGE,VX_PRT_BRIDGE,1, _
       4000,True,True,0,250,1.0,0)
 
     Move(SW_IN_mV, 1, SW_IN/MULT_PYRANO_UPPER, 1)
     Move(SW_OUT_mV, 1, SW_OUT/MULT_PYRANO_LOWER, 1)
-    Move(LW_IN_mV, 1, LW_IN/MULT_PYRGEO_UPPER, 1)
-    Move(LW_OUT_mV, 1, LW_OUT/MULT_PYRGEO_LOWER, 1)
+    Move(LW_IN_Uncorr_mV, 1, LW_IN/MULT_PYRGEO_UPPER, 1)
+    Move(LW_OUT_Uncorr_mV, 1, LW_OUT/MULT_PYRGEO_LOWER, 1)
     Move(CNR4_Tbody_C_BrHalf4W, 1, CNR4_Tbody_C, 1)
 
     PRTCalc(CNR4_Tbody_C,1,CNR4_Tbody_C,0,1,0)
@@ -250,35 +284,35 @@ EndSub
 '======= ATMOS 14 Temp/Press/RH ======='
 '======================================'
 Public atmos14(4)
-Alias VP : Units VP = kPa
-Alias TA : Units TA = C
-Alias RH : Units RH = unitless
-Alias PA : Units PA = kPa
+Alias atmos14(1) = VP : Units VP = kPa
+Alias atmos14(2) = TA : Units TA = C
+Alias atmos14(3) = RH : Units RH = unitless
+Alias atmos14(4) = PA : Units PA = kPa
 Public ATMOS14_Diag : Units ATMOS14_Diag = unitless
 
 'Brown: +12V
 'Orange: Data
 'Clear: G'
-Const C_ATMOS14 = C7
-Const SW_ATMOS14 = SW12_1
+Const C_ATMOS14 = C1
+Const SW12_ATMOS14 = SW12_1
 Const ATMOS14_ADDR = 4
 Sub measure_atmos14(atmos14(4), ATMOS14_Diag, address)
   SW12(SW12_ATMOS14,1)
   Delay(0,500,mSec)
   SDI12Recorder(atmos14(1), C_ATMOS14, address, "M!", 1.0, 0.0)
   SDI12Recorder(ATMOS14_Diag, C_ATMOS14, address, "V!", 1.0, 0.0)
-  SW12(SW12_TEROS12,0)
+  SW12(SW12_ATMOS14,0)
 EndSub
 
 '============================================'
 '======= SI-111 Infrared Thermometers ======='
 '============================================'
-Const mC0
-Const mC1
-Const mC2
-Const bC0
-Const bC1
-Const bC2
+Const mC0 = 0
+Const mC1 = 0
+Const mC2 = 0
+Const bC0 = 0
+Const bC1 = 0
+Const bC2 = 0
 Dim m, b
 
 Public SI111_Tbody_C : Units SI111_Tbody_C = C
@@ -293,8 +327,8 @@ Public T_CANOPY : Units T_CANOPY = C
 'Red: Ex (SN >7282), Diff H (SN <=7282)'
 'Clear: Shield'
 Const VX_SI111 = Vx3
-Const SE_SI111 = 12
-Const DIFF_SI111 = 13
+Const SE_SI111 = 14
+Const DIFF_SI111 = 8
 Sub measure_si111(SI111_Tbody_C, T_CANOPY_mV, T_CANOPY)
   Therm109(SI111_Tbody_C,1,SE_SI111,VX_SI111,0,60,1.0,0)
   VoltDiff(T_CANOPY_mV,1,mV200,DIFF_SI111,True,0,60,1.0,0)
@@ -312,9 +346,9 @@ Public PPFD : Units PPFD = umol m-2 s-1
 
 'From campbell: Red = High, Black = Low, Clear = Shield
 'From LI-COR with LI290 604ohm resistor: Red = High, Black = Low
-Const DIFF_LI190 = 6
+Const SE_LI190 = 12
 Sub measure_li190(PPFD, PPFD_mV)
-  VoltDiff(1, PPFD, mV200, DIFF_LI190, True, 0, 60, MULT_LI190, 0.0)
+  VoltSe(PPFD,1, mV200, SE_LI190, True, 0, 60, MULT_LI190, 0.0)
   Move(PPFD_mV, 1, PPFD/MULT_LI190, 1)
   If (PPFD < 0) Then PPFD = 0
 EndSub
