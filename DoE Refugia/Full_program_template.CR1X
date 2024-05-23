@@ -220,30 +220,87 @@ Sub measure_teros12_3pits(tmp_teros12(3), VWC(N_DEPTHS, N_PITS), _
   SW12(SW12_TEROS12,1)
   Delay(0,500,mSec)
   SDI12Recorder(tmp_teros12(1), C_PIT_A, address, "M!", 1.0, 0.0)
-  SDI12Recorder(TEROS12_Diag(1, address + 1), C_PIT_A, address, "V!", 1.0, 0.0)
-  Move(VWCCounts(1, address + 1), 1, tmp_teros12(1), 1)
-  Move(TS(1, address + 1), 1, tmp_teros12(2), 1)
-  Move(EC(1, address + 1), 1, tmp_teros12(3), 1)
+  SDI12Recorder(TEROS12_Diag(1, address), C_PIT_A, address, "V!", 1.0, 0.0)
+  Move(VWCCounts(1, address), 1, tmp_teros12(1), 1)
+  Move(TS(1, address), 1, tmp_teros12(2), 1)
+  Move(EC(1, address), 1, tmp_teros12(3), 1)
   
   
   SDI12Recorder(tmp_teros12(1), C_PIT_B, address, "M!", 1.0, 0.0)
-  SDI12Recorder(TEROS12_Diag(2, address + 1), C_PIT_B, address, "V!", 1.0, 0.0)
-  Move(VWCCounts(2, address + 1), 1, tmp_teros12(1), 1)
-  Move(TS(2, address + 1), 1, tmp_teros12(2), 1)
-  Move(EC(2, address + 1), 1, tmp_teros12(3), 1)
+  SDI12Recorder(TEROS12_Diag(2, address), C_PIT_B, address, "V!", 1.0, 0.0)
+  Move(VWCCounts(2, address), 1, tmp_teros12(1), 1)
+  Move(TS(2, address), 1, tmp_teros12(2), 1)
+  Move(EC(2, address), 1, tmp_teros12(3), 1)
   
   SDI12Recorder(tmp_teros12(1), C_PIT_C, address, "M!", 1.0, 0.0)
-  SDI12Recorder(TEROS12_Diag(3, address + 1), C_PIT_C, address, "V!", 1.0, 0.0)
+  SDI12Recorder(TEROS12_Diag(3, address), C_PIT_C, address, "V!", 1.0, 0.0)
   Move(VWCCounts(3, address), 1, tmp_teros12(1), 1)
   Move(TS(3, address), 1, tmp_teros12(2), 1)
   Move(EC(3, address), 1, tmp_teros12(3), 1)
   
   'Mineral soil calibration
-  VWC(1, address + 1) = 3.879e-4*VWCCounts(1, address + 1) - 0.6956
-  VWC(2, address + 1) = 3.879e-4*VWCCounts(2, address + 1) - 0.6956
-  VWC(3, address + 1) = 3.879e-4*VWCCounts(3, address + 1) - 0.6956
+  VWC(1, address) = 3.879e-4*VWCCounts(1, address) - 0.6956
+  VWC(2, address) = 3.879e-4*VWCCounts(2, address) - 0.6956
+  VWC(3, address) = 3.879e-4*VWCCounts(3, address) - 0.6956
   
   SW12(SW12_TEROS12,0)
+EndSub
+
+'======================================'
+'======= ATMOS 14 Temp/Press/RH ======='
+'======================================'
+Public atmos14(4)
+Alias VP : Units VP = kPa
+Alias TA : Units TA = C
+Alias RH : Units RH = unitless
+Alias PA : Units PA = kPa
+Public ATMOS14_Diag : Units ATMOS14_Diag = unitless
+
+'Brown: +12V
+'Orange: Data
+'Clear: G'
+Const C_ATMOS14 = C7
+Const SW_ATMOS14 = SW12_1
+Const ATMOS14_ADDR = 4
+Sub measure_atmos14(atmos14(4), ATMOS14_Diag, address)
+  SW12(SW12_ATMOS14,1)
+  Delay(0,500,mSec)
+  SDI12Recorder(atmos14(1), C_ATMOS14, address, "M!", 1.0, 0.0)
+  SDI12Recorder(ATMOS14_Diag, C_ATMOS14, address, "V!", 1.0, 0.0)
+  SW12(SW12_TEROS12,0)
+EndSub
+
+'============================================'
+'======= SI-111 Infrared Thermometers ======='
+'============================================'
+Const mC0
+Const mC1
+Const mC2
+Const bC0
+Const bC1
+Const bC2
+Dim m, b
+
+Public SI111_Tbody_C : Units SI111_Tbody_C = C
+Public T_CANOPY_mV : Units T_CANOPY_mV = mV
+Public T_CANOPY : Units T_CANOPY = C
+
+'Wiring
+'White: Diff H (SN >7282), Ex (SN <=7282)'
+'Black: Diff L
+'Green: SE
+'Blue: AG'
+'Red: Ex (SN >7282), Diff H (SN <=7282)'
+'Clear: Shield'
+Const VX_SI111 = Vx3
+Const SE_SI111 = 12
+Const DIFF_SI111 = 13
+Sub measure_si111(SI111_Tbody_C, T_CANOPY_mV, T_CANOPY)
+  Therm109(SI111_Tbody_C,1,SE_SI111,VX_SI111,0,60,1.0,0)
+  VoltDiff(T_CANOPY_mV,1,mV200,DIFF_SI111,True,0,60,1.0,0)
+  m = mC2 * SI111_Tbody_C^2 + mC1 * SI111_Tbody_C + mC0
+  b = bC2 * SI111_Tbody_C^2 + bC1 * SI111_Tbody_C + bC0
+  T_CANOPY = (((SI111_Tbody_C + 273.15)^4) + m*T_CANOPY_mV + b)^0.25 - 273.15
 EndSub
 
 '==========================================='
@@ -275,6 +332,11 @@ DataTable(SlowData,True,-1)
 	
 	Minimum(1,BattV, FP2,False,False)
 	Sample(1,PTemp_C,FP2)
+
+  Sample(1, TA, FP2)
+  Sample(1, VP, FP2)
+  Sample(1, RH, FP2)
+  Sample(1, PA, FP2)
 	
 	Sample(1,SW_IN, IEEE4)
 	Sample(1,SW_OUT, IEEE4)
@@ -287,6 +349,9 @@ DataTable(SlowData,True,-1)
 	Sample(1,LW_IN_Uncorr, IEEE4)
 	Sample(1,LW_OUT_Uncorr, IEEE4)
 	Sample(1,CNR4_Tbody_C, FP2)
+
+  Sample(1,T_CANOPY,FP2)
+  Sample(1,SI111_Tbody_C,FP2)
 
   Sample(1, PPFD, FP2)
 	
@@ -315,11 +380,13 @@ DataTable(SlowData_Raw, True, -1)
 	Sample(1,SW_OUT_mV, IEEE4)
 	Sample(1,LW_IN_Uncorr_mV, IEEE4)
 	Sample(1,LW_OUT_Uncorr_mV, IEEE4)
-	Sample(1,CNR4_Tbody_C_BrHalf4W, FP2)
+	Sample(1,CNR4_Tbody_C_BrHalf4W, IEEE4)
 
-  Sample(1, PPFD_mV, FP2)
+  Sample(1,T_CANOPY_mV,IEEE4)
+
+  Sample(1, PPFD_mV, IEEE4)
   
-  Sample(N_ST100, TSN_BrHalf(1), FP2)
+  Sample(N_ST100, TSN_BrHalf(1), IEEE4)
 EndTable
 
 
@@ -335,8 +402,10 @@ BeginProg
       LW_OUT, CNR4_Tbody_C, CNR4_Self_Heat, ALB, NETRAD, NetSw, NetLw, _
       SW_IN_mV, SW_OUT_mV, LW_IN_Uncorr_mV, LW_OUT_Uncorr_mV, _
       CNR4_Tbody_C_BrHalf4W)
+    measure_si111(SI111_Tbody_C, T_CANOPY_mV, T_CANOPY)
     measure_juddcom_analog(Judd_Ta_C, Judd_Dist, D_SNOW, Z_JUDD)
     measure_li190(PPFD, PPFD_mV)
+    measure_atmos14(atmos14, ATMOS14_Diag, ATMOS14_ADDR)
     
     'RM Young 05103 WS and WD
     'unfortunately, PulseCount cannot be used inside a subroutine, so we 
@@ -355,7 +424,7 @@ BeginProg
       PortSet(MUX_RES, 0) : Delay(0, 150, mSec)
       
       'TEROS12
-      For teros12_address = 0 To N_DEPTHS - 1
+      For teros12_address = 1 To N_DEPTHS
         measure_teros12_3pits(tmp_teros12, VWC, TS, EC, TEROS12_Diag, _
           VWCCounts, teros12_address)
       Next
