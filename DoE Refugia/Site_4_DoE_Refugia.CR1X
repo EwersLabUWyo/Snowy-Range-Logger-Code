@@ -144,7 +144,7 @@ EndSub
 '=====================================
 '======= JuddComm Depth Sensor =======
 '=====================================
-Const Z_JUDD = 2  ' m
+Const Z_JUDD = 2.25  ' m
 
 Public Judd_Ta_C : Units Judd_Ta_C = C
 Public Judd_Dist : Units Judd_Dist = m
