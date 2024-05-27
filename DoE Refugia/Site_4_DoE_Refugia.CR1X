@@ -32,6 +32,9 @@
 '  * The serial number of the instrument
 '  * The calibration date of the instrument
 '
+' ## Renaming data tables
+' Rename the data tables to include the site name. 
+'
 ' When you get back to Laramie, commit to the snowy range logger code repo on
 ' github.
 
@@ -360,7 +363,7 @@ EndSub
 'Primary data table
 DataTable(SlowData,True,-1)
 	DataInterval(0,STORAGE_INTERVAL_S,Sec,10)
-	TableFile("CRD:"+Status.SerialNumber+"_"+STORAGE_INTERVAL_S+"Sec", 64,-1,0, _
+	TableFile("CRD:"+Status.SerialNumber+"_Site4_"+STORAGE_INTERVAL_S+"Sec", 64,-1,0, _
 	  24,Hr,0,0)
 	
 	Minimum(1,BattV, FP2,False,False)
@@ -407,7 +410,7 @@ EndTable
 'Stores raw voltages from sensors that have more complicated postprocessing
 DataTable(SlowData_Raw, True, -1)
   DataInterval(0,STORAGE_INTERVAL_S,Sec,10)
-	TableFile("CRD:"+Status.SerialNumber+"_"+STORAGE_INTERVAL_S+"Sec_Raw", _
+	TableFile("CRD:"+Status.SerialNumber+"_Site4_"+STORAGE_INTERVAL_S+"Sec_Raw", _
     64,-1,0,24,Hr,0,0)
   Sample(1,SW_IN_mV, IEEE4)
 	Sample(1,SW_OUT_mV, IEEE4)
