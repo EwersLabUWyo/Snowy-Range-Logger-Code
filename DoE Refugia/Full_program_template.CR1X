@@ -345,7 +345,7 @@ EndSub
 '============================================'
 '======= LI190 PAR Sensor, SN Q101960 ======='
 '============================================'
-Const MULT_LI190 = 250.29531
+Const MULT_LI190 = 250.29531  ' umol m-2 s-1 mV-1
 Public PPFD_mV : Units PPFD_mV = mV
 Public PPFD : Units PPFD = umol m-2 s-1
 
