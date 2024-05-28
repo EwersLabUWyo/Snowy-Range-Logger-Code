@@ -1,0 +1,52 @@
+5/28/2024
+10:33:14
+Created by Short Cut (4.4)
+Short Cut Program:  hc2s3.DEF
+
+-Wiring for CR1000X Series-
+
+  HMP45C (6WPS)
+    1H:  Yellow
+    1L:  Blue
+    Ground:  White
+    Ground:  Black
+    Ground:  Clear
+    SW12-1:  Red
+
+-Measurement Labels-
+
+  Default
+    BattV
+    PTemp_C
+
+  HMP45C (6WPS)
+    AirTC
+    RH
+
+----------------------------------------------------
+Table: Table2
+Interval: 1440 MIN
+Fields:
+ BattV_Min	Units: Volts
+
+----------------------------------------------------
+Table: DataTableInfo
+Fields:
+ DataTableName(1)
+ SkippedRecord
+ DataRecordSize(1,1)	Units: records
+ DataRecordSize(1,2)	Units: records
+ SecsPerRecord
+ DataFillDays(1,1)	Units: days
+ DataFillDays(1,2)	Units: days
+ DataFilled(1,1)
+ DataFilled(1,2)
+
+----------------------------------------------------
+Table: Public
+Fields:
+ BattV	Units: Volts
+ PTemp_C	Units: Deg C
+ AirTC	Units: Deg C
+ RH	Units: %
+
