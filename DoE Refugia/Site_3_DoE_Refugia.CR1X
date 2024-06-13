@@ -144,7 +144,7 @@ EndSub
 '=====================================
 '======= JuddComm Depth Sensor =======
 '=====================================
-Const Z_JUDD = 2.25  ' m
+Const Z_JUDD = 2.1  ' m
 
 Public Judd_Ta_C : Units Judd_Ta_C = C
 Public Judd_Dist : Units Judd_Dist = m
@@ -303,14 +303,14 @@ Sub measure_atmos14(atmos14(4), ATMOS14_Diag, addr)
 EndSub
 
 '======================================================'
-'======= SI-111 Infrared Thermometers, SN 10960 ======='
+'======= SI-111 Infrared Thermometers, SN 10961 ======='
 '======================================================'
-Const mC0 = 188000e4
-Const mC1 = 118146e2
-Const mC2 = 135848
-Const bC0 = -206257e2
-Const bC1 = -147198
-Const bC2 = 5853.98
+Const mC0 = 172876e4
+Const mC1 = 107967e2
+Const mC2 = 119088
+Const bC0 = -126025e2
+Const bC1 = -26257
+Const bC2 = 5593.55
 Dim m, b
 
 Public SI111_Tbody_C : Units SI111_Tbody_C = C
