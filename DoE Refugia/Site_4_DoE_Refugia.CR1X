@@ -305,12 +305,12 @@ EndSub
 '======================================================'
 '======= SI-111 Infrared Thermometers, SN 10959 ======='
 '======================================================'
-Const mC0 = 170173e4
-Const mC1 = 109139e2
-Const mC2 = 120918
-Const bC0 = -135197e2
-Const bC1 = -22576.2
-Const bC2 = 6258.96
+Const mC0 = 172876e4
+Const mC1 = 107967e2
+Const mC2 = 119088
+Const bC0 = -126025e2
+Const bC1 = -26257
+Const bC2 = 5593.55
 Dim m, b
 
 Public SI111_Tbody_C : Units SI111_Tbody_C = C
