@@ -1,0 +1,466 @@
+'DoE datalogger testing
+'Author : Alex Fox
+'Created 2024-04-16
+
+'\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\////////////////////////////////////////////
+'\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ READ ME ////////////////////////////////////////
+'\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\////////////////////////////////////////////
+' 
+' # When setting up on a new station:
+' ## Plugging everything in
+' Plug in the Juddcom (snow depth), CNR4, ATMOS14, RMyoung, temp/humidity/pres,
+' and soil moisture sensor box into the appropriate ports on the enclosure.
+' Note that the CNR1/4 has 3 cables coming out of it: 2 radiation cables and 1
+' "Therm" cable. Make sure so install the 6-pin radiation cable into its 6-pin
+' mate on the enclosure.
+'
+' Not all connectors are wired consistantly, so you must match the proper
+' Sensor cable to each logger box. Each sensor cable that is fitted with a 
+' quick-connector is marked with its name and serial/id number. Match this with
+' the serial/id number writted on the cable in the enclosure.
+' 
+' ## Inputting Calibration Constants
+' Before you modify the program, you should save a copy to associate with this
+' specific site. For example, if you are installing this tower at site 4, name
+' the program doe_refugia_site_4.crx
+' 
+' You will need to provide calibration constants for the following sensors:
+'  * SI-111 Infrared thermometer (mC0, mC1, mC2, bC0, bC1, bC2) T
+'  * LI-190 PAR sensor (MULT_LI190) T
+'  * CNR1/4 4-channel net radiometer (MULT_PYRGEO/PYRANO_UPPER/LOWER) T
+'  * Juddcomm snow depth sensor height in meters (Z_JUDD)
+' Once you've input these constants, add a comment specifying:
+'  * The serial number of the instrument
+'  * The calibration date of the instrument
+'
+' ## Renaming data tables
+' Rename the data tables to include the site name. 
+'
+' When you get back to Laramie, commit to the snowy range logger code repo on
+' github.
+
+
+'\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\////////////////////////////////////////////
+'\\\\\\\\\\\\\ Define Instruments and Measurement Subroutines /////////////////
+'\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\////////////////////////////////////////////
+
+' Main scan/storage table
+Const MAIN_SCAN_INTERVAL_S = 1 '300
+Const SLOW_SCAN_INTERVAL_S = 1 
+Const STORAGE_INTERVAL_S = 1
+
+'===============================================
+'======= Datalogger default measurements =======
+'===============================================
+Public BattV : Units BattV = Volts
+Public PTemp_C : Units PTemp_C = C
+
+'==============================================
+'======= CNR4 Net radiometer SN 234183 ========
+'==============================================
+Const MULT_PYRGEO_UPPER = 9.73' uV W-1 m-2
+Const MULT_PYRGEO_LOWER = 8.57' uV W-1 m-2
+Const MULT_PYRANO_UPPER = 12.40' uV W-1 m-2
+Const MULT_PYRANO_LOWER = 12.47' uV W-1 m-2
+Const SIGMA = 5.67e-8  ' W m-2 K-4
+
+Public SW_IN_mV : Units SW_IN_mV = mV
+Public SW_OUT_mV : Units SW_OUT_mV = mV
+Public LW_IN_Uncorr_mV : Units LW_IN_Uncorr_mV = mV
+Public LW_OUT_Uncorr_mV : Units LW_OUT_Uncorr_mV = mV
+Public CNR4_Tbody_C_BrHalf4W : Units CNR4_Tbody_C_BrHalf4W = unitless
+
+Public SW_IN: Units SW_IN = W m-2
+Public SW_OUT : Units SW_OUT = W m-2
+Public LW_IN_Uncorr : Units LW_IN_Uncorr = W m-2
+Public LW_OUT_Uncorr : Units LW_OUT_Uncorr = W m-2
+Public CNR4_Self_Heat : Units CNR4_Self_Heat = W m-2
+Public CNR4_Tbody_C : Units CNR4_Tbody_C = C
+Public NetSw : Units NetSw = W m-2
+Public NetLw : Units NetLw = W m-2
+Public ALB : Units ALB = Unitless
+Public NETRAD : Units NETRAD = W m-2
+Public LW_IN : Units LW_IN = W m-2
+Public LW_OUT : Units LW_OUT = W m-2
+
+' CNR4 set up in single-ended mode. Body temp measured using PT100 with a 
+' 4WPB100 bridge.
+' Wiring according to K+Z manual, NOT campbell manual
+' Sensor cable:
+'  Red: Pyran. Upper H
+'  Blue: Pyran. Upper L
+'  White: Pyran. Lower H
+'  Black: Pyran. Lower L
+'  Grey: Pyrge. Upper H
+'  Yellow: Pyrge. Upper L
+'  Brown: Pyrge. Lower H
+'  Green: Pyrge. Lower L
+'  Thick black/clear: Shield
+' Thermometer cable:
+'  Grey: PT100 Left
+'  Green: PT100 Left
+'  Yellow: PT100 Right
+'  Brown: PT100 Right
+'  Thick black/clear: Shield
+'  When making a PRT measurement using the 4WPB100 PRT bridge, "left" and 
+' "right" cables form a group. A group must go in either (a) 4WPB100 L + 
+' CR1000X Diff H or in (b) 4WPB100 AG + CR1000X Diff L. Order does not matter 
+' (ie. "left" and "right" are arbitrary). For example, Grey -> 4WPB100 AG, 
+' Green -> CR1000X 2L, Yellow -> CR1000X 2H, Brown -> 4WPB100 is a valid setup
+
+' Measure a cnr4 in Single ended mode for radiation, and PRT mode for body temp
+Const SE_PYRANO_UPPER = 7
+Const SE_PYRANO_LOWER = 8
+Const SE_PYRGEO_UPPER = 5
+Const SE_PYRGEO_LOWER = 6
+Const DIFF_PRT_BRIDGE = 1
+Const VX_PRT_BRIDGE = Vx1
+Sub measure_cnr4_se_prt(SW_IN, SW_OUT, LW_IN_Uncorr, LW_OUT_Uncorr, LW_IN, _
+  LW_OUT, CNR4_Tbody_C, CNR4_Self_Heat, ALB, NETRAD, NetSw, NetLw, SW_IN_mV, _
+  SW_OUT_mV, LW_IN_Uncorr_mV, LW_OUT_Uncorr_mV, CNR4_Tbody_C_BrHalf4W)
+    VoltSe(SW_IN_mV, 1, mV200C, SE_PYRANO_UPPER, 1, 0, 60, 1.0, 0)
+		VoltSe(SW_OUT_mV, 1, mV200C, SE_PYRANO_LOWER, 1, 0, 60, 1.0, 0)
+		VoltSe(LW_IN_Uncorr_mV, 1, mV200C, SE_PYRGEO_UPPER, 1, 0, 60, 1.0, 0)
+    VoltSe(LW_OUT_Uncorr_mV, 1, mV200C, SE_PYRGEO_LOWER, 1, 0, 60, 1.0, 0)
+    BrHalf4W(CNR4_Tbody_C_BrHalf4W,1,mV1000,mV1000,DIFF_PRT_BRIDGE,VX_PRT_BRIDGE,1, _
+      4000,True,True,0,250,1.0,0)
+    
+    SW_IN = SW_IN_mV*1000.0/MULT_PYRANO_UPPER
+    SW_OUT = SW_OUT_mV*1000.0/MULT_PYRANO_LOWER
+    LW_IN_Uncorr = LW_IN_Uncorr_mV*1000/MULT_PYRGEO_UPPER
+    LW_OUT_Uncorr = LW_OUT_Uncorr_mV*1000.0/MULT_PYRGEO_LOWER
+    PRTCalc(CNR4_Tbody_C,1,CNR4_Tbody_C_BrHalf4W,0,1,0)
+    
+    CNR4_Self_Heat = SIGMA*(CNR4_Tbody_C + 273.15)^4  ' Stefan boltzmann
+		LW_IN = LW_IN_Uncorr + CNR4_Self_Heat  ' apply correction
+		LW_OUT = LW_OUT_Uncorr + CNR4_Self_Heat
+		NetSw = SW_IN - SW_OUT
+		NetLw = LW_IN - LW_OUT
+		ALB = SW_OUT/SW_IN
+		If (ALB > 1) OR (ALB < 0) Then ALB = NAN
+		NETRAD = NetSw + NetLw
+EndSub
+
+'=====================================
+'======= JuddComm Depth Sensor =======
+'=====================================
+Const Z_JUDD = 2.17  ' m
+
+Public Judd_Ta_C : Units Judd_Ta_C = C
+Public Judd_Dist : Units Judd_Dist = m
+Public D_SNOW : Units D_SNOW = m
+
+'Sensor set up in analog, differential mode
+'White: H
+'Brown: L
+'Red: +12V
+'Black: G
+'Clear: Shield
+'Green: Enable
+
+'Measure a JuddComm snow depth sensor in analog mode
+Const C_JUDD_ENABLE = C6
+Const DIFF_JUDD = 5
+Const SW12_JUDD = SW12_2
+Sub measure_juddcom_analog(t, dist, depth, z)
+  ' Depth sensor is first turned on, then after 800ms it outputs the air 
+  ' temperature. 1800ms later, it outputs the temperature-corrected distance
+  ' measurement. The sensor is then turned off.
+  SW12(SW12_JUDD, 1) : Delay(0, 500, mSec)
+  PortSet(C_JUDD_ENABLE, 1) : Delay(0, 800, mSec)
+  VoltDiff(t,1,mV5000,DIFF_JUDD,True,0,60,0.2,-273.15)
+  Delay(0, 1800, mSec)
+  VoltDiff(dist, 1, mV5000,DIFF_JUDD,True, 0, 60, 0.005, 0)
+  PortSet(C_JUDD_ENABLE, 0)
+  SW12(SW12_JUDD, 0)
+  depth = z - dist
+  If (dist < 0.5) OR (depth < 0.008) Then depth = NAN
+EndSub 
+
+'======================================
+'======= RM Young 05103 WS & WD =======
+'======================================
+Public WS : Units WS = m s-1
+Public WD : Units WD = Deg  ' degrees past N
+' Red: Pulse
+' White/Blk/Clr: AG
+' Green: SE
+' Blue: Vx
+Const P_RMY = P1
+Const VX_RMY = Vx2
+Const SE_RMY = 11
+
+'==================================================
+'======= ST100 Temp Probe on an AM16/32 MUX =======
+'==================================================
+
+Dim i
+Const N_ST100 = 14  ' number of sensors
+Public TSN_BrHalf(N_ST100) : Units TSN_BrHalf = unitless
+Public TSN(N_ST100) : Units TSN = C
+
+' SE Therm lead: White
+' Excitiation Therm: Red
+' Therm ground: Black
+' Shield: clear
+' Remember to hook up analog grounds b/w MUX and Datalogger!
+Const MUX_RES = C2
+Const MUX_CLK = C4
+
+' Measure an ST100 and copy the measurement into variable t.
+Const VX_ST100 = Vx4
+Const SE_ST100 = 13
+Sub measure_st100(TSN, TSN_BrHalf)
+  BrHalf(TSN, 1, mV5000, SE_ST100, VX_ST100, 1, 2500, True, 0, 60, 1, 0)
+  Move(TSN_BrHalf, 1, TSN, 1)
+  TSN = 24900*(1 - TSN)/TSN
+  ' Steinhart-Hart Equation
+  TSN = 1/(1.129241e-3 + 2.341077e-4*LN(TSN) + 8.775468e-8*LN(TSN)^3) - 273.15
+  If (TSN < -45) OR (TSN > 35) Then TSN = NAN  ' filter bad values
+EndSub
+
+'====================================
+'======= TEROS 12 Soil Probes =======
+'====================================
+' Each pit it measured on its own control port, so pit A might be plugged
+' into C1, and pit B sensors might be plugged into C3, for example.
+' Sensors must share SDI12 addres at a given depth, so all sensors at 10cm
+' depth, for example, should share the same addr.
+Const N_DEPTHS = 3
+Const N_PITS = 3
+Dim addr, pit
+
+Public VWC(N_PITS, N_DEPTHS) : Units VWC = unitless
+Public TS(N_PITS, N_DEPTHS) : Units TS = C
+Public EC(N_PITS, N_DEPTHS) : Units EC = uS cm-1
+Public TEROS12_Diag(N_PITS, N_DEPTHS) : Units TEROS12_Diag = unitless
+Public VWCCounts(N_PITS, N_DEPTHS) : Units VWCCounts = unitless
+Public tmp_teros12(3)
+
+'Measure N_PITS teros12 sensors on different control ports, all sharing the same
+'addr. For example, if sensor a2, b2, and c2 are plugged into control ports 
+'C1, C3, and C5 respectively, and are all addred #9, you would measure them
+'with this command.
+Const C_PIT_A = C1
+Const C_PIT_B = C3
+Const C_PIT_C = C5
+Const SW12_TEROS12 = SW12_1
+Sub measure_teros12_3pits(tmp_teros12(3), VWC(N_DEPTHS, N_PITS), _
+  TS(N_DEPTHS, N_PITS), EC(N_DEPTHS, N_PITS), TEROS12_Diag(N_DEPTHS, N_PITS), _
+  VWCCounts(N_DEPTHS, N_PITS))
+  
+  SW12(SW12_TEROS12,1) : Delay(0,250,mSec)
+  For addr = 1 To N_DEPTHS    
+    pit = 1
+    SDI12Recorder(tmp_teros12(1), C_PIT_A, addr, "M!", 1.0, 0.0, -1)
+    SDI12Recorder(TEROS12_Diag(pit, addr), C_PIT_A, addr, "V!", 1.0, 0.0, -1)
+    Move(VWCCounts(pit, addr), 1, tmp_teros12(1), 1)
+    TS(pit, addr) = tmp_teros12(2)
+    Move(EC(pit, addr), 1, tmp_teros12(3), 1)
+    VWC(pit, addr) = 3.879e-4*VWCCounts(pit, addr) - 0.6956
+    
+    pit = 2
+    SDI12Recorder(tmp_teros12(1), C_PIT_B, addr, "M!", 1.0, 0.0,-1)
+    SDI12Recorder(TEROS12_Diag(pit, addr), C_PIT_B, addr, "V!", 1.0, 0.0, -1)
+    Move(VWCCounts(pit, addr), 1, tmp_teros12(1), 1)
+    TS(pit, addr) = tmp_teros12(2)
+    Move(EC(pit, addr), 1, tmp_teros12(3), 1)
+    VWC(pit, addr) = 3.879e-4*VWCCounts(pit, addr) - 0.6956
+    
+    pit = 3
+    SDI12Recorder(tmp_teros12(1), C_PIT_C, addr, "M!", 1.0, 0.0, -1)
+    SDI12Recorder(TEROS12_Diag(pit, addr), C_PIT_C, addr, "V!", 1.0, 0.0, -1)
+    Move(VWCCounts(pit, addr), 1, tmp_teros12(1), 1)
+    TS(pit, addr) = tmp_teros12(2)
+    Move(EC(pit, addr), 1, tmp_teros12(3), 1)
+    VWC(pit, addr) = 3.879e-4*VWCCounts(pit, addr) - 0.6956
+  Next
+  
+  SW12(SW12_TEROS12,0)
+EndSub
+
+'======================================'
+'======= ATMOS 14 Temp/Press/RH ======='
+'======================================'
+Public atmos14(4)
+Alias atmos14(1) = VP : Units VP = kPa
+Alias atmos14(2) = TA : Units TA = C
+Alias atmos14(3) = RH : Units RH = unitless
+Alias atmos14(4) = PA : Units PA = kPa
+Public ATMOS14_Diag : Units ATMOS14_Diag = unitless
+
+'Brown: +12V
+'Orange: Data
+'Clear: G'
+Const C_ATMOS14 = C1
+Const SW12_ATMOS14 = SW12_1
+Const ATMOS14_ADDR = 4
+Sub measure_atmos14(atmos14(4), ATMOS14_Diag, addr)
+  SW12(SW12_ATMOS14,1) : Delay(0,250,mSec)
+  SDI12Recorder(atmos14(1), C_ATMOS14, addr, "M!", 1.0, 0.0, -1)
+  SDI12Recorder(ATMOS14_Diag, C_ATMOS14, addr, "V!", 1.0, 0.0, -1)
+  SW12(SW12_ATMOS14,0)
+EndSub
+
+'======================================================'
+'======= SI-111 Infrared Thermometers, SN 10961 ======='
+'======================================================'
+Const mC0 = 172876e4
+Const mC1 = 107967e2
+Const mC2 = 119088
+Const bC0 = -126025e2
+Const bC1 = -26257
+Const bC2 = 5593.55
+Dim m, b
+
+Public SI111_Tbody_C : Units SI111_Tbody_C = C
+Public T_CANOPY_mV : Units T_CANOPY_mV = mV
+Public T_CANOPY : Units T_CANOPY = C
+
+'Wiring
+'White: Diff H (SN >7282), Ex (SN <=7282)'
+'Black: Diff L
+'Green: SE
+'Blue: AG'
+'Red: Ex (SN >7282), Diff H (SN <=7282)'
+'Clear: Shield'
+Const VX_SI111 = Vx3
+Const SE_SI111 = 14
+Const DIFF_SI111 = 8
+Sub measure_si111(SI111_Tbody_C, T_CANOPY_mV, T_CANOPY)
+  Therm109(SI111_Tbody_C,1,SE_SI111,VX_SI111,0,60,1.0,0)
+  VoltDiff(T_CANOPY_mV,1,mV200,DIFF_SI111,True,0,60,1.0,0)
+  m = mC2 * SI111_Tbody_C^2 + mC1 * SI111_Tbody_C + mC0
+  b = bC2 * SI111_Tbody_C^2 + bC1 * SI111_Tbody_C + bC0
+  T_CANOPY = (((SI111_Tbody_C + 273.15)^4) + m*T_CANOPY_mV + b)^0.25 - 273.15
+EndSub
+
+'============================================'
+'======= LI190 PAR Sensor, SN Q33474 ======='
+'============================================'
+Const MULT_LI190 = 287.9 'calibrated April 2024
+Public PPFD_mV : Units PPFD_mV = mV
+Public PPFD : Units PPFD = umol m-2 s-1
+
+'From campbell: Red = High, Black = Low, Clear = Shield
+'From LI-COR with LI290 604ohm resistor: Red = High, Black = Low
+Const SE_LI190 = 12
+Sub measure_li190(PPFD, PPFD_mV)
+  VoltSe(PPFD,1, mV200, SE_LI190, True, 0, 60, MULT_LI190, 0.0)
+  Move(PPFD_mV, 1, PPFD/MULT_LI190, 1)
+  If (PPFD < 0) Then PPFD = 0
+EndSub
+
+
+'\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\////////////////////////////////////////////
+'\\\\\\\\\\\\\\\\\\\\\\\\\\\\Define Data Tables////////////////////////////////
+'\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\////////////////////////////////////////////
+
+'Primary data table
+DataTable(SlowData,True,-1)
+	DataInterval(0,STORAGE_INTERVAL_S,Sec,10)
+	TableFile("CRD:"+Status.SerialNumber+"_Site3_"+STORAGE_INTERVAL_S+"Sec", 64,-1,0, _
+	  24,Hr,0,0)
+	
+	Minimum(1,BattV, FP2,False,False)
+	Sample(1,PTemp_C,FP2)
+
+  Sample(1, TA, FP2)
+  Sample(1, VP, FP2)
+  Sample(1, RH, FP2)
+  Sample(1, PA, FP2)
+	
+	Sample(1,SW_IN, IEEE4)
+	Sample(1,SW_OUT, IEEE4)
+	Sample(1,LW_IN, IEEE4)
+	Sample(1,LW_OUT, IEEE4)
+	Sample(1,ALB, FP2)
+	Sample(1,NETRAD, IEEE4)
+	Sample(1,NetSw, IEEE4)
+	Sample(1,NetLw, IEEE4)
+	Sample(1,LW_IN_Uncorr, IEEE4)
+	Sample(1,LW_OUT_Uncorr, IEEE4)
+	Sample(1,CNR4_Tbody_C, FP2)
+
+  Sample(1,T_CANOPY,FP2)
+  Sample(1,SI111_Tbody_C,FP2)
+
+  Sample(1, PPFD, FP2)
+	
+  Sample(1,Judd_Ta_C,FP2)
+  Sample(1,Judd_Dist,FP2)
+  Sample(1,D_SNOW,FP2)
+  
+  Sample(1, WS, FP2)
+  Sample(1, WD, FP2)
+  
+  Sample(N_ST100, TSN(1), FP2)
+  
+  Sample(N_PITS*N_DEPTHS, VWC(1,1), FP2)
+  Sample(N_PITS*N_DEPTHS, TS(1,1), FP2)
+  Sample(N_PITS*N_DEPTHS, EC(1,1), IEEE4)
+  Sample(N_PITS*N_DEPTHS, VWCCounts(1,1), IEEE4)
+  Sample(N_PITS*N_DEPTHS, TEROS12_Diag(1, 1), UINT2)
+EndTable
+
+'Stores raw voltages from sensors that have more complicated postprocessing
+DataTable(SlowData_Raw, True, -1)
+  DataInterval(0,STORAGE_INTERVAL_S,Sec,10)
+	TableFile("CRD:"+Status.SerialNumber+"_Site3_"+STORAGE_INTERVAL_S+"Sec_Raw", _
+    64,-1,0,24,Hr,0,0)
+  Sample(1,SW_IN_mV, IEEE4)
+	Sample(1,SW_OUT_mV, IEEE4)
+	Sample(1,LW_IN_Uncorr_mV, IEEE4)
+	Sample(1,LW_OUT_Uncorr_mV, IEEE4)
+	Sample(1,CNR4_Tbody_C_BrHalf4W, IEEE4)
+
+  Sample(1,T_CANOPY_mV,IEEE4)
+
+  Sample(1, PPFD_mV, IEEE4)
+  
+  Sample(N_ST100, TSN_BrHalf(1), IEEE4)
+EndTable
+
+
+'\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\////////////////////////////////////////////
+'\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\Main Program////////////////////////////////////
+'\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\////////////////////////////////////////////
+BeginProg
+	'Main Scan
+	Scan(MAIN_SCAN_INTERVAL_S,Sec,1,0)
+		Battery(BattV)
+		PanelTemp(PTemp_C,60)
+		measure_cnr4_se_prt(SW_IN, SW_OUT, LW_IN_Uncorr, LW_OUT_Uncorr, LW_IN, _
+      LW_OUT, CNR4_Tbody_C, CNR4_Self_Heat, ALB, NETRAD, NetSw, NetLw, _
+      SW_IN_mV, SW_OUT_mV, LW_IN_Uncorr_mV, LW_OUT_Uncorr_mV, _
+      CNR4_Tbody_C_BrHalf4W)
+    measure_si111(SI111_Tbody_C, T_CANOPY_mV, T_CANOPY)
+    measure_juddcom_analog(Judd_Ta_C, Judd_Dist, D_SNOW, Z_JUDD)
+    measure_li190(PPFD, PPFD_mV)
+    measure_atmos14(atmos14, ATMOS14_Diag, ATMOS14_ADDR)
+    
+    'RM Young 05103 WS and WD
+    'unfortunately, PulseCount cannot be used inside a subroutine, so we 
+    'include the full code here in the main program without abstraction
+    PulseCount(WS,1, P_RMY, 5, 1, 0.098, 0.0)
+    BrHalf(WD, 1, mV5000, SE_RMY, VX_RMY, 1, 2500, True, 20000,60, 355.0, 0.0)
+		If (WD >= 355) OR (WD < 0) Then WD = 0  'WD is in the half-open [0, 355)
+		
+    'MUX measurements
+    If TimeIntoInterval(0,SLOW_SCAN_INTERVAL_S,Sec)
+      PortSet(MUX_RES, 1) : Delay(0, 150, mSec)
+      For i = 1 To N_ST100
+        PulsePort(MUX_CLK,10000)
+        measure_st100(TSN(i), TSN_BrHalf(i))
+      Next
+      PortSet(MUX_RES, 0) : Delay(0, 150, mSec)
+      
+      'TEROS12
+        measure_teros12_3pits(tmp_teros12, VWC, TS, EC, TEROS12_Diag, _
+          VWCCounts)
+    EndIf
+		
+    CallTable SlowData
+    CallTable SlowData_Raw
+	NextScan
+EndProg
