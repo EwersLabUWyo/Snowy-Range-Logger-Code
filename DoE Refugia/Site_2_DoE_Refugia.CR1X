@@ -45,9 +45,9 @@
 '\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\////////////////////////////////////////////
 
 ' Main scan/storage table
-Const MAIN_SCAN_INTERVAL_S = 1 '300
-Const SLOW_SCAN_INTERVAL_S = 1 
-Const STORAGE_INTERVAL_S = 1
+Const MAIN_SCAN_INTERVAL_S = 300
+Const SLOW_SCAN_INTERVAL_S = 300 
+Const STORAGE_INTERVAL_S = 300
 
 '===============================================
 '======= Datalogger default measurements =======
@@ -359,7 +359,7 @@ EndSub
 'Primary data table
 DataTable(SlowData,True,-1)
 	DataInterval(0,STORAGE_INTERVAL_S,Sec,10)
-	TableFile("CRD:"+Status.SerialNumber+"_Site3_"+STORAGE_INTERVAL_S+"Sec", 64,-1,0, _
+	TableFile("CRD:"+Status.SerialNumber+"_Site2_"+STORAGE_INTERVAL_S+"Sec", 64,-1,0, _
 	  24,Hr,0,0)
 	
 	Minimum(1,BattV, FP2,False,False)
@@ -406,7 +406,7 @@ EndTable
 'Stores raw voltages from sensors that have more complicated postprocessing
 DataTable(SlowData_Raw, True, -1)
   DataInterval(0,STORAGE_INTERVAL_S,Sec,10)
-	TableFile("CRD:"+Status.SerialNumber+"_Site3_"+STORAGE_INTERVAL_S+"Sec_Raw", _
+	TableFile("CRD:"+Status.SerialNumber+"_Site2_"+STORAGE_INTERVAL_S+"Sec_Raw", _
     64,-1,0,24,Hr,0,0)
   Sample(1,SW_IN_mV, IEEE4)
 	Sample(1,SW_OUT_mV, IEEE4)
