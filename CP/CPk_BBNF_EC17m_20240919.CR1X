@@ -9,6 +9,12 @@ Const SDM_PER = 250
 Public Batt : Units Batt = V
 Public PTemp : Units PTemp = C
 
+'=======================================================
+'=======================================================
+' Flux Sensors
+'=======================================================
+'=======================================================
+
 '=================
 ' LI7200 Variables
 '=================
@@ -83,6 +89,99 @@ Alias csat3_7m_raw(4) = Ts_csat3_7m : Units Ts_csat3_7m = C
 Alias csat3_7m_raw(5) = DIAG_CSAT3_7m : Units DIAG_CSAT3_7m = unitless
 Dim disable_csat3_7m
 
+'=======================================================
+'=======================================================
+' Biomet Sensors
+'=======================================================
+'=======================================================
+
+'==================
+'CNR4 Net Radiometer
+'==================
+Public SWD : Units SWD = W m-2 'shortwave down
+Public SWU : Units SWU = W m-2 'shortwave up
+Public Tb : Units Tb = C 'block temp
+Public LWD_cor : Units LWD_cor = W m-2 'temp corrected longwave down
+Public LWU_cor : Units LWU_cor = W m-2 'temp corrected longwave up
+Public albedo : Units albedo = % 'albedo
+Public Rn : Units Rn = W m-2 'netrad
+Dim CNR4(5) 'sensor readings tmp storage
+Dim CNR4_raw(5) 'raw data 
+Dim Rs ' for calculation of block temperature
+
+'===============
+'LI-190SB PAR
+'===============
+Public PAR(2) : Units PAR = μmol s-1 m-2
+Alias PAR(1) = PAR_up_17m                        'flux density for LI190SB facing up (measuring downwards PAR)
+Alias PAR(2) = PAR_dn_17m                        'flux density for LI190SB facing down (measuring upwards PAR)
+Public PAR_raw(2) 'raw data 
+
+'===============
+'Air temp + Humidity
+'===============
+Public AirT_17m : Units AirT_17m = C
+Public AirT_12m : Units AirT_12m = C
+Public AirT_7m : Units AirT_7m = C
+Public RH_17m : Units RH_17m = %
+Public RH_12m : Units RH_12m = %
+Public RH_7m : Units RH_7m = %
+
+'===============
+'PRI
+'===============
+Public UpOut_17m(3)
+Public DownOut_17m(3)
+
+Public PRI_17m
+
+Alias UpOut_17m(1) = Up_532_17m
+Alias DownOut_17m(1) = Down_532_17m
+Alias UpOut_17m(2) = Up_570_17m
+Alias DownOut_17m(2) = Down_570_17m
+Alias UpOut_17m(3) = Ind_up_17m
+Alias DownOut_17m(3) = Ind_down_17m
+
+Units Up_532_17m = W/m^2 nm
+Units Down_532_17m = W/m^2 nm sr
+Units Up_570_17m = W/m^2 nm
+Units Down_570_17m = W/m^2 nm sr
+
+Public UpOut_7m(3)
+Public DownOut_7m(3)
+
+Public PRI_7m
+
+Alias UpOut_7m(1) = Up_532_7m
+Alias DownOut_7m(1) = Down_532_7m
+Alias UpOut_7m(2) = Up_570_7m
+Alias DownOut_7m(2) = Down_570_7m
+Alias UpOut_7m(3) = Ind_up_7m
+Alias DownOut_7m(3) = Ind_down_7m
+
+Units Up_532_7m = W/m^2 nm
+Units Down_532_7m = W/m^2 nm sr
+Units Up_570_7m = W/m^2 nm
+Units Down_570_7m = W/m^2 nm sr
+'===============
+'Wind
+'===============
+Public WS : Units WS = m s-1 
+Public WD : Units WD = Decimal degrees
+Alias WS = WS_12m
+Alias WD = WD_12m
+
+'===============
+'SB-111/SI-111 Surface Temp Probes
+'===============
+Dim m                                             'slope for target T calculation
+Dim b                                             'offset for target T calculation
+Dim TT_K                                          'SB111 Target Temp (K)
+Dim SBT_K                                         'SB111 Block Temp (K)
+Public SurfT_canopy : Units SurfT_canopy = C      'SI111 IR Target Temp (C)
+Public SBT_C : Units SBT_C = C                    'SI111 Block Temp (C)
+Public TTmV : Units TTmV = mV                     'SI111 Target raw
+
 'Define Data Tables
 DataTable (TimeSeriesData,1,-1)
 	DataInterval (0, MEAS_INT_FAST, mSec,100)
@@ -150,8 +249,32 @@ DataTable(Met5Min, 1, -1)
   DataInterval(0, 5, Min, 10)
   TableFile ("CRD:"&Status.SerialNumber(1,1)&".CP_BBNF17m_Met5Min",64,-1,0,28,Day,0,0)
   
+  Sample(1, SWD, IEEE4)
+  Sample(1, SWU, IEEE4)
+  Sample(1, Tb, FP2)
+  Sample(1, LWD_cor, IEEE4)
+  Sample(1, LWU_cor, IEEE4)
+  Sample(1, albedo, FP2)
+  Sample(1, Rn, IEEE4)
+  
+  Sample(1, PAR_up_17m, IEEE4)
+  Sample(1, PAR_dn_17m, IEEE4)
+  
+  Sample(1, AirT_17m, FP2)
+  Sample(1, AirT_12m, FP2)
+  Sample(1, AirT_7m, FP2)
+  Sample(1, RH_17m, FP2)
+  Sample(1, RH_12m, FP2)
+  Sample(1, RH_7m, FP2)
+  
+  Sample(1, WS_17m, FP2)
+  Sample(1, WS_12m, FP2)
+  Sample(1, WD_12m, FP2)
+  Sample(1, WS_7m, FP2) 
+   
   Sample(1, P_LI7200, IEEE4)
   Sample(1, P_LI7500, IEEE4)
+  
   
   Sample(1, PTemp, IEEE4)
   Sample(1, Batt, IEEE4)
