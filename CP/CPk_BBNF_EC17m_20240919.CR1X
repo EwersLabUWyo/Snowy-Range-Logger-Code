@@ -1,0 +1,228 @@
+
+Const MEAS_INT_FAST = 100  'mSec
+Const MEAS_INT_SLOW = 5  ' Min
+
+Const FAST_SCAN_BUFFER_SIZE = 60*INT(1000/MEAS_INT_FAST)
+Const SDM_PER = 250
+
+' Default measurements
+Public Batt : Units Batt = V
+Public PTemp : Units PTemp = C
+
+'=================
+' LI7200 Variables
+'=================
+Const SDM_ADDR_LI7200 = 6
+Public li7200_raw(10)
+Alias li7200_raw(1) = chid_c_LI7200 : Units chid_c_LI7200 = umol mol-1
+Alias li7200_raw(2) = chid_v_LI7200 : Units chid_v_LI7200 = mmol mol-1
+Alias li7200_raw(3) = rho_c_LI7200 : Units rho_c_LI7200 = mg m-3
+Alias li7200_raw(4) = rho_v_LI7200 : Units rho_v_LI7200 = g m-3
+Alias li7200_raw(5) = AGC_LI7200 : Units AGC_LI7200 = %
+Alias li7200_raw(6) = P_LI7200 : Units P_LI7200 = kPa
+Alias li7200_raw(7) = Tin_LI7200 : Units Tin_LI7200 = C
+Alias li7200_raw(8) = Tout_LI7200 : Units Tout_LI7200 = C
+Alias li7200_raw(9) = Tcell_LI7200 : Units Tcell_LI7200 = C
+Public DIAG_LI7200
+Public disable_li7200
+
+' Flow module data read from digital analog converter
+Public flow_slpm_LI7200
+Units flow_slpm_LI7200 = L min-1 
+Const FLOW_SLPM_SE = 13 
+Dim FLOW_SLPM_XF = 50
+
+Public flow_lpm_LI7200
+Units flow_lpm_LI7200 = L min-1
+Const FLOW_LPM_SE = 14
+Dim FLOW_LPM_XF = 50
+
+Public flow_kPa_LI7200
+Units flow_kPa_LI7200 = kPa
+Const FLOW_KPA_SE = 15
+Dim FLOW_KPA_XF = 5
+
+Public flow_drive_LI7200
+Units flow_drive_LI7200 = %
+Const FLOW_DRIVE_SE = 16
+Dim FLOW_DRIVE_XF = 100
+
+'================
+'LI7500 Variables
+'================
+Const SDM_ADDR_LI7500 = 7
+Public li7500_raw(4)
+Alias li7500_raw(1) = rho_c_LI7500 : Units rho_c_LI7500 = mg m-3
+Alias li7500_raw(2) = rho_v_LI7500 : Units rho_v_LI7500 = g m-3
+Alias li7500_raw(3) = P_LI7500 : Units P_LI7500 = kPa
+Alias li7500_raw(4) = DIAG_LI7500 : Units DIAG_LI7500 = unitless
+Public AGC_LI7500 : Units AGC_LI7500 = %
+Dim disable_li7500
+
+'======================
+'CSAT 3 (17m) Variables
+'======================
+Const SDM_ADDR_CSAT3_17m = 3
+Public csat3_17m_raw(5)
+Alias csat3_17m_raw(1) = Ux_CSAT3_17m : Units Ux_CSAT3_17m = m s-1
+Alias csat3_17m_raw(2) = Uy_CSAT3_17m : Units Uy_CSAT3_17m = m s-1
+Alias csat3_17m_raw(3) = Uz_CSAT3_17m : Units Uz_CSAT3_17m = m s-1
+Alias csat3_17m_raw(4) = Ts_CSAT3_17m : Units Ts_CSAT3_17m = C
+Alias csat3_17m_raw(5) = DIAG_CSAT3_17m : Units DIAG_CSAT3_17m = unitless
+Dim disable_csat3_17m
+
+'=====================
+'CSAT 3 (7m) Variables
+'=====================
+Const SDM_ADDR_CSAT3_7m = 4
+Public csat3_7m_raw(5)
+Alias csat3_7m_raw(1) = Ux_csat3_7m : Units Ux_csat3_7m = m s-1
+Alias csat3_7m_raw(2) = Uy_CSAT3_7m : Units Uy_CSAT3_7m = m s-1
+Alias csat3_7m_raw(3) = Uz_CSAT3_7m : Units Uz_CSAT3_7m = m s-1
+Alias csat3_7m_raw(4) = Ts_csat3_7m : Units Ts_csat3_7m = C
+Alias csat3_7m_raw(5) = DIAG_CSAT3_7m : Units DIAG_CSAT3_7m = unitless
+Dim disable_csat3_7m
+
+'Define Data Tables
+DataTable (TimeSeriesData,1,-1)
+	DataInterval (0, MEAS_INT_FAST, mSec,100)
+	TableFile ("CRD:"&Status.SerialNumber(1,1)&".CP_BBNF17m_10Hz",64,-1,0,1,Day,0,0)
+	Sample(9, chid_c_LI7200, IEEE4)
+	Sample(1, DIAG_LI7200,UINT2)
+	
+	Sample(3, rho_c_LI7500, IEEE4)
+	Sample(1, AGC_LI7500, FP2)
+	Sample(1, DIAG_LI7500,UINT2)
+	
+  Sample(4, Ux_CSAT3_17m, IEEE4)
+  Sample(1, DIAG_CSAT3_17m, UINT2)
+  
+  Sample(4, Ux_csat3_7m, IEEE4)
+  Sample(1, DIAG_CSAT3_7m, UINT2)
+EndTable
+
+DataTable (Flux30Min, 1, -1)
+  DataInterval (0, 30, Min,100)
+  TableFile ("CRD:"&Status.SerialNumber(1,1)&".CP_BBNF17m_Flux30Min",64,-1,0,28,Day,0,0)
+  
+  Average(4, chid_c_LI7200, IEEE4, 0)
+  Average(5, AGC_LI7200, IEEE4, 0)
+  Average(1, DIAG_LI7200,UINT2, 0)
+	
+	Average(3, rho_c_LI7500, IEEE4, 0)
+  Average(1, AGC_LI7500, FP2, 0)
+	Average(1, DIAG_LI7500,UINT2, 0)
+	
+  Average(4, Ux_CSAT3_17m, IEEE4, 0)
+  Average(1, DIAG_CSAT3_17m, UINT2, 0)
+  
+  Average(4, Ux_csat3_7m, IEEE4, 0)
+  Average(1, DIAG_CSAT3_7m, UINT2, 0)
+  
+  Average(1, flow_slpm_LI7200, IEEE4, 0)
+  Average(1, flow_lpm_LI7200, IEEE4, 0)
+  Average(1, flow_kPa_LI7200, IEEE4, 0)
+  Average(1, flow_drive_LI7200, IEEE4, 0)
+  
+  StdDev(4, chid_c_LI7200, IEEE4, 0)
+  StdDev(5, AGC_LI7200, IEEE4, 0)
+  Minimum(1, DIAG_LI7200,UINT2,0,0)
+  Maximum(1, DIAG_LI7200,UINT2, 0, 0)
+  
+	StdDev(3, rho_c_LI7500, IEEE4, 0)
+	StdDev(1, AGC_LI7500, FP2, 0)
+	Minimum(1, DIAG_LI7500,UINT2, 0, 0)
+	Maximum(1, DIAG_LI7500,UINT2, 0, 0)
+	
+  StdDev(4, Ux_CSAT3_17m, IEEE4, 0)
+  Minimum(1, DIAG_CSAT3_17m, UINT2, 0, 0)
+  Maximum(1, DIAG_CSAT3_17m, UINT2, 0, 0)
+  
+  StdDev(4, Ux_csat3_7m, IEEE4, 0)
+  Minimum(1, DIAG_CSAT3_7m, UINT2, 0, 0)
+  Maximum(1, DIAG_CSAT3_7m, UINT2, 0, 0)
+  
+  Average(1, PTemp, IEEE4, 0)
+  Minimum(1, Batt, IEEE4, 0, 0)
+EndTable
+
+DataTable(Met5Min, 1, -1)
+  DataInterval(0, 5, Min, 10)
+  TableFile ("CRD:"&Status.SerialNumber(1,1)&".CP_BBNF17m_Met5Min",64,-1,0,28,Day,0,0)
+  
+  Sample(1, P_LI7200, IEEE4)
+  Sample(1, P_LI7500, IEEE4)
+  
+  Sample(1, PTemp, IEEE4)
+  Sample(1, Batt, IEEE4)
+ EndTable
+ 
+DataTable(Met30Min, 1, -1)
+  DataInterval(0, 30, Min, 100)
+  TableFile ("CRD:"&Status.SerialNumber(1,1)&".CP_BBNF17m_Met30Min",64,-1,0,28,Day,0,0)
+  
+  Average(1, P_LI7200, IEEE4, 0)
+  Average(1, P_LI7500, IEEE4, 0)
+  
+  Average(1, PTemp, IEEE4, 0)
+  Minimum(1, Batt, IEEE4, 0, 0)
+ EndTable
+  
+Sub Filter_CSAT3_Output(diag_csat, disable_csat)
+  ' Cast NaNs to 61502
+  If(diag_csat = NaN) Then (diag_csat = 61502)
+  ' disable intermediate processing if any of the following warning flags are on
+  ' f03e: NaN
+  ' f03f: No Data
+  ' f000: Lost Trigger
+  ' f001: SDM Error
+  ' f002: wrong CSAT3 embedded code
+  disable_csat = diag_csat AND &hf000
+EndSub
+
+'Main Program
+SDMBeginPort(C1)
+BeginProg
+  ' fast measurements
+  SDMSpeed (SDM_PER)
+	Scan(MEAS_INT_FAST, mSec,FAST_SCAN_BUFFER_SIZE, 0)
+    LI7200(chid_c_LI7200, 1, SDM_ADDR_LI7200,2)
+    LI7200(DIAG_LI7200, 1, SDM_ADDR_LI7200, 6)
+    rho_c_LI7200 = rho_c_LI7200*44.0095
+    rho_v_LI7200 = rho_v_LI7200*18.0153*0.001
+'    disable_li7200 = (INT(DIAG_LI7200) >> 4) AND &h1df
+    
+  	CS7500 (rho_c_LI7500,1,SDM_ADDR_LI7500,6)
+    rho_c_LI7500 = rho_c_LI7500*44.0095
+    rho_v_LI7500 = rho_v_LI7500*18.0153*0.001
+    AGC_LI7500 = (INT(DIAG_LI7500) AND &hf)*6.25
+'    disable_li7500 = INT(DIAG_LI7500) >> 4
+    
+    CSAT3 (csat3_17m_raw,1,SDM_ADDR_CSAT3_17m,91,10)
+'    Filter_CSAT3_output(DIAG_CSAT3_17m, disable_csat3_17m)
+'    If (disable_csat3_17m) Then Move(csat3_17m_raw,4,NaN,1)
+
+    CSAT3 (csat3_7m_raw,1,SDM_ADDR_CSAT3_7m,91,10)
+'    Filter_CSAT3_output(DIAG_CSAT3_7m, disable_csat3_7m)
+'    If (disable_csat3_7m) Then Move(csat3_7m_raw,4,NaN,1)
+  
+  	
+		CallTable TimeSeriesData
+	NextScan
+	
+  ' slow measurements
+	SlowSequence
+	Scan(MEAS_INT_SLOW, Min, 0, 0)
+	  Battery (Batt)
+	  PanelTemp (PTemp, 60)
+	  
+	  VoltSe(flow_slpm_LI7200, 1,mV5000,FLOW_SLPM_SE,1,0,60,FLOW_SLPM_XF/5000,0)
+    VoltSe(flow_lpm_LI7200, 1,mV5000,FLOW_LPM_SE,1,0,60,FLOW_LPM_XF/5000,0)
+    VoltSe(flow_kPa_LI7200, 1,mV5000,FLOW_KPA_SE,1,0,60,FLOW_KPA_XF/5000,0)
+    VoltSe(flow_drive_LI7200, 1,mV5000,FLOW_DRIVE_SE,1,0,60,FLOW_DRIVE_XF/5000,0)
+    CallTable Flux30Min
+    CallTable Met5Min
+    CallTable Met30Min
+	NextScan
+EndProg
+
