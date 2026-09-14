@@ -1,0 +1,159 @@
+'Code for 3.5m EC system in CPl_BB-SF
+'Author: Mario Bretfeld
+'Edit History: 
+' 2019-02-21 changed main scan interval from 5 min to 5 sec
+' 2018-11-19 added card out 
+
+'*** Station constants.
+'Start of Constants Customization Section
+
+Const SCAN_INTERVAL = 100  'Unique value, measurement rate 100 ms (10 Hz) or 50 ms (20 Hz).
+Const OUTPUT_INTERVAL = 30 'Unique value, online flux data output interval in minutes.
+Const SCAN_BUFFER_SIZE = 60*INT (1000/SCAN_INTERVAL)     'Compute a 60 second scan buffer.
+Const NUM_DAY_CRD = 44    'Unique value, number of days of flux data to store on a 16 GB CF card (44 days = 2 GB). This value will vary with configuration.
+Const NUM_DAY_CPU = 1                                              'Number of days of flux data to store on the CPU.
+Const FLUX_SIZE_CPU = Ceiling ((NUM_DAY_CPU*1440)/OUTPUT_INTERVAL) 'Size of flux data table on CPU [days].
+Const FLUX_SIZE_CRD = Ceiling ((NUM_DAY_CRD*1440)/OUTPUT_INTERVAL) 'Size of flux data table on CRD [days].
+Const SDM_PER = 30         'Unique value, default SDM clock speed.
+
+Const snow_height_m = 3.2  'height of snow depth sensor
+
+Public BattV
+Public PTemp_C
+Public SR50A(2)
+Public TCDT
+Public DBTCDT
+Public sonic_irga_1(12)
+
+Alias SR50A(1) = DT
+Alias SR50A(2) = Q
+Alias sonic_irga_1(1) = Ux
+Alias sonic_irga_1(2) = Uy
+Alias sonic_irga_1(3) = Uz
+Alias sonic_irga_1(4) = Ts
+Alias sonic_irga_1(5) = diag_sonic
+Alias sonic_irga_1(6) = CO2_uncorr
+Alias sonic_irga_1(7) = H2O
+Alias sonic_irga_1(8) = diag_irga
+Alias sonic_irga_1(9) = ambient_tempr
+Alias sonic_irga_1(10) = ambient_press
+Alias sonic_irga_1(11) = CO2_sig_strgth
+Alias sonic_irga_1(12) = H2O_sig_strgth
+
+Public ambient_Ts
+Dim rho_v_kgm3
+Dim tson_k
+Dim a_term
+Dim A_term
+Dim B_term
+
+Public sonic_irga_2(13)
+Alias sonic_irga_2(9) = cell_tempr: Units cell_tempr = degC
+Alias sonic_irga_2(10) = cell_press: Units cell_press = kPa
+' This value contains the fast temperature-corrected CO2 concentration in the sample cell.
+Alias sonic_irga_2(13) = CO2: Units CO2 = mg m-3
+
+Units BattV = V
+Units PTemp_C = C
+Units Ux = m/s
+Units Uy = m/s
+Units Uz = m/s
+Units Ts = C
+Units diag_sonic = arb
+Units CO2 = mg/m^3
+Units CO2_uncorr = mg/m^3
+Units H2O = g/m^3
+Units diag_irga = arb
+Units cell_tmpr = C
+Units cell_press = kPa
+Units ambient_tmpr = C
+Units ambient_press = kPa
+Units CO2_sig_strgth = arb
+Units H2O_sig_strgth = arb
+Units ambient_Ts = C
+
+DataTable (TimeSeriesData,TRUE,-1)
+ DataInterval (0,100,mSec,10)
+ TableFile ("CRD:"&Status.SerialNumber(1,1)&".CPk_BBSF4m_10Hz",64,-1,0,1,Day,0,0)
+ Sample(1, Ux, IEEE4)
+ Sample(1, Uy, IEEE4)
+ Sample(1, Uz, IEEE4)
+ Sample(1, Ts, IEEE4)
+ Sample(1, ambient_Ts, IEEE4)
+ Sample(1, diag_sonic, IEEE4)
+ Sample(1, CO2_uncorr, IEEE4)
+ Sample(1, CO2, IEEE4)
+ Sample(1, H2O, IEEE4)
+ Sample(1, diag_irga, IEEE4)
+ Sample(1, ambient_tempr, FP2)
+ Sample(1, cell_tempr, FP2)
+ Sample(1, ambient_press, FP2)
+ Sample(1, cell_press, FP2)
+ Sample(1, CO2_sig_strgth, FP2)
+ Sample(1, H2O_sig_strgth, FP2)
+EndTable
+
+DataTable (Flux30Min,TRUE,-1)
+	DataInterval (0,OUTPUT_INTERVAL,Min,100)
+	CardOut (0,FLUX_SIZE_CRD)
+		
+	Average (12,Ux,IEEE4,0)
+	Average(1, cell_tempr,IEEE4, 0)
+	Average(1, cell_press,IEEE4, 0)
+	Average(1, CO2, IEEE4, 0)
+	Average(1, ambient_Ts, IEEE4, 0)
+
+	StdDev (12,Ux,IEEE4,0)	
+	StdDev(1, cell_tempr,IEEE4, 0)
+	StdDev(1, cell_press,IEEE4, 0)
+	StdDev(1, CO2, IEEE4, 0)
+	StdDev(1, ambient_Ts, IEEE4, 0)
+
+	Average(1,BattV,IEEE4,0)
+	Minimum(1,BattV,IEEE4,0,False)
+	Average(1,PTemp_C,IEEE4,False)
+	Average(1,DT,IEEE4,False)
+	StdDev(1,DT,IEEE4,False)
+	Average(1,Q,IEEE4,False)
+	StdDev(1,Q,IEEE4,False)
+	Average(1,TCDT,IEEE4,False)
+	StdDev(1,TCDT,IEEE4,False)
+	Average(1,DBTCDT,IEEE4,False)
+	StdDev(1,DBTCDT,IEEE4,False)
+EndTable
+
+BeginProg
+  SDMSpeed (SDM_PER)
+  Scan (SCAN_INTERVAL,mSec,SCAN_BUFFER_SIZE,0)
+
+  EC100 (sonic_irga_1(),1,1)
+  EC100 (sonic_irga_2(),1,2)
+
+  ' compute humidity-corrected sonic temperature
+  rho_v_kgm3 = H2O / 1000
+  tson_k = Ts + 273.15
+  a_term = rho_v_kgm3 * 461.53
+  A_term = a_term * (1 - 1.51 * 0.621963)
+  B_term = ambient_press*1000 + tson_k * (1 - 0.621963) * a_term
+  ambient_Ts = (B_term - np.sqrt(B_term**2 - 4 * A_term * tson_k * pa)) / (2 * A_term) - 273.15
+
+  CallTable TimeSeriesData
+ NextScan
+ 
+
+SlowSequence
+ Scan (5,Sec,3,0)
+   
+  'Measure CR6 Diagnostics
+  PanelTemp (PTemp_C,60)
+  Battery (BattV)
+	'SR50A Sonic Ranging Sensor (SDI-12 Output) measurements 'DT' and 'Q' and calculations 'TCDT' and 'DBTCDT'
+	SDI12Recorder(SR50A(),U1,"0","M1!",1,0,-1)
+	TCDT = DT*SQR((cell_tmpr + 273.15)/273.15)
+	DBTCDT = snow_height_m - TCDT  
+	
+  'Output
+  CallTable Flux30Min  
+  
+ NextScan
+EndProg
